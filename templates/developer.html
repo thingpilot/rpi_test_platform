@@ -4,6 +4,12 @@
 <div class="jumbotron">
     <div class="container">
         <div class="row">
+            <div class="col-sm-12">
+                <h1 class="text-center">Developer Mode</h1>
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
             <div class="col-sm-4">
                 <b>Select module:</b>
                 <button class="btn btn-primary dropdown-toggle" type="button" id="moduleSelectButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -15,12 +21,12 @@
                     <a class="dropdown-item" data-name="None" href="#">None</a>
                 </div>
             </div>
-            <div class="col-sm-4">
+            <div class="col-sm-2">
                 <button class="btn btn-danger" type="button" id="moduleDetectButton">
                     Disconnected
                 </button>
             </div>  
-            <div class="col-sm-4">
+            <div class="col-sm-6">
                 
             </div>     
         </div>
@@ -31,13 +37,13 @@
                 <input type="file" id="fileUploadButton" accept=".bin" onchange="handleUpload(this.files)">
                 <label class="btn btn-secondary" for="fileUploadButton" id="fileUploadLabel">Firmware</label>
             </div>  
-            <div class="col-sm-4">
+            <div class="col-sm-2">
                 <button class="btn btn-secondary" type="button" id="programButton">
                     Program
                 </button>
             </div>  
-            <div class="col-sm-4">
-                <label id="fileDateLabel"></label>
+            <div class="col-sm-6">
+                <label id="fileDateLabel">Modified: </label>
             </div>
         </div>
         <p></p>
@@ -45,12 +51,12 @@
             <div class="col-sm-4">
                 <textarea class="form-control" id="provisionURL" rows="1" placeholder="Provision URL"></textarea>
             </div>  
-            <div class="col-sm-4">
+            <div class="col-sm-2">
                 <button class="btn btn-secondary" type="button" id="provisionButton" onclick="handleProvision()">
                     Provision
                 </button>
             </div>  
-            <div class="col-sm-4">
+            <div class="col-sm-6">
             </div>
         </div>
     </div>
@@ -98,14 +104,14 @@
         {
             $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
             $('#fileUploadLabel').text("Invalid");
-            $('#fileDateLabel').text("");
+            $('#fileDateLabel').text("Modified: ");
             return; 
         }
 
         $('#fileUploadLabel').removeClass("btn btn-danger");
         $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
         $('#fileUploadLabel').text(filename);
-        $('#fileDateLabel').text(date);
+        $('#fileDateLabel').text("Modified: " + date);
     };
 
     function isValidURL(string) {
