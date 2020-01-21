@@ -6,7 +6,7 @@
         <div class="row">
             <div class="col-sm-4">
                 <b>Select module:</b>
-                <button class="btn btn-secondary dropdown-toggle" type="button" id="moduleSelectButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="moduleSelectButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Module
                 </button>
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -23,6 +23,22 @@
             <div class="col-sm-4">
                 
             </div>     
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <b>Select firmware:</b>
+                <input type="file" id="fileUploadButton" accept=".bin" onchange="handleUpload(this.files)">
+                <label class="btn btn-secondary" for="fileUploadButton" id="fileUploadLabel">Firmware</label>
+            </div>  
+            <div class="col-sm-4">
+                <button class="btn btn-secondary" type="button" id="programButton">
+                    Program
+                </button>
+            </div>  
+            <div class="col-sm-4">
+                <label id="fileDateLabel"></label>
+            </div>
         </div>
     </div>
 </div>
@@ -51,13 +67,37 @@
         if(module == "None")
         {
             $('#moduleSelectButton').text("Module");
-            $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-secondary dropdown-toggle");
+            $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-primary dropdown-toggle");
         }
         else 
         {
             $('#moduleSelectButton').text(name.getAttribute("data-name"));
-            $('#moduleSelectButton').removeClass("btn btn-secondary dropdown-toggle").addClass("btn btn-success dropdown-toggle");
+            $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle");
         }
     });
+
+    function handleUpload(file) {
+        var filename = file[0].name;
+        var extension = filename.split('.')[1].toLowerCase();
+        var date = file[0].lastModifiedDate;
+
+        if(extension != 'bin') 
+        {
+            $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
+            $('#fileUploadLabel').text("Invalid")
+            $('#fileDateLabel').text("")
+            return; 
+        }
+
+        $('#fileUploadLabel').removeClass("btn btn-danger")
+        $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
+        $('#fileUploadLabel').text(filename)
+        $('#fileDateLabel').text(date)
+        
+        console.log(file)
+        console.log(filename, extension)
+    };
 </script>
 {% endblock %}
+
+
