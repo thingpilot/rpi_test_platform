@@ -18,6 +18,7 @@ BOOT0_PIN        = 0
 U2_OUTPUT_ENABLE = 16
 U3_OUTPUT_ENABLE = 12
 
+
 # atexit handler
 def exit_handler():
     print(f"{datetime.datetime.now()} *** OCD GPIO pin management terminated ***")
