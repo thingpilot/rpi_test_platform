@@ -92,7 +92,7 @@
     function handleUpload(file) {
         var filename = file[0].name;
         var extension = filename.split('.')[1].toLowerCase();
-        var date = file[0].lastModifiedDate;
+        var date = file[0].lastModifiedDate.toString().slice(0, 33);
 
         if(extension != 'bin') 
         {
