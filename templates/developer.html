@@ -1,0 +1,46 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div class="jumbotron">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-4">
+                <b>Select module:</b>
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="moduleSelectButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Module
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <a class="dropdown-item" data-name="Wright" href="#">Wright</a>
+                    <a class="dropdown-item" data-name="Earhart" href="#">Earhart</a>
+                    <a class="dropdown-item" data-name="None" href="#">None</a>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                2
+            </div>  
+            <div class="col-sm-4">
+                
+            </div>     
+        </div>
+    </div>
+</div>
+
+<script>
+    $('.dropdown-item').click((event) => {
+        var name = event.currentTarget;
+        var module = name.getAttribute("data-name");
+        console.log(module);
+
+        if(module == "None")
+        {
+            $('#moduleSelectButton').text("Module");
+            $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-secondary dropdown-toggle");
+        }
+        else 
+        {
+            $('#moduleSelectButton').text(name.getAttribute("data-name"));
+            $('#moduleSelectButton').removeClass("btn btn-secondary dropdown-toggle").addClass("btn btn-success dropdown-toggle");
+        }
+    });
+</script>
+{% endblock %}
