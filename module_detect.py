@@ -6,7 +6,7 @@
 """
 
 # Standard library imports
-import atexit, time
+import atexit, datetime, time
 
 # 3rd-party library imports
 import RPi.GPIO as gpio
@@ -31,8 +31,10 @@ def is_module_present(data):
     state = gpio.input(DETECT_PIN)
 
     if(state == 1):
+        print(f"{datetime.datetime.now()} *** Module connected, triggered by JS ***")
         sio.emit('MODULE_PRESENT')
     else:
+        print(f"{datetime.datetime.now()} *** Module disconnected, triggered by JS ***")
         sio.emit('MODULE_NOT_PRESENT')
 
 
@@ -54,15 +56,13 @@ if __name__ == "__main__":
             previous_state = current_state
             current_state = gpio.input(DETECT_PIN)
 
-            print(f"Current: {current_state}     Previous: {previous_state}")
-
             if(current_state == 1 and previous_state == 0):
-                    print("Present")
+                    print(f"{datetime.datetime.now()} *** Module connected ***")
                     sio.emit('MODULE_PRESENT')         
             elif(current_state == 0 and previous_state == 1):
-                    print("Not present")
+                    print(f"{datetime.datetime.now()} *** Module disconnected ***")
                     sio.emit('MODULE_NOT_PRESENT')
 
-            time.sleep(0.1)       
+            time.sleep(0.15)       
     except KeyboardInterrupt:
         pass
