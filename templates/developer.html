@@ -40,6 +40,19 @@
                 <label id="fileDateLabel"></label>
             </div>
         </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <textarea class="form-control" id="provisionURL" rows="1" placeholder="Provision URL"></textarea>
+            </div>  
+            <div class="col-sm-4">
+                <button class="btn btn-secondary" type="button" id="provisionButton" onclick="handleProvision()">
+                    Provision
+                </button>
+            </div>  
+            <div class="col-sm-4">
+            </div>
+        </div>
     </div>
 </div>
 
@@ -47,12 +60,12 @@
     var socket = io();
 
     socket.on('js_module_present', function() {
-        $('#moduleDetectButton').text("Connected")
+        $('#moduleDetectButton').text("Connected");
         $('#moduleDetectButton').removeClass("btn btn-danger").addClass("btn btn-success");
     });
 
     socket.on('js_module_not_present', function() {
-        $('#moduleDetectButton').text("Disconnected")
+        $('#moduleDetectButton').text("Disconnected");
         $('#moduleDetectButton').removeClass("btn btn-success").addClass("btn btn-danger");
     });
 
@@ -84,18 +97,39 @@
         if(extension != 'bin') 
         {
             $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
-            $('#fileUploadLabel').text("Invalid")
-            $('#fileDateLabel').text("")
+            $('#fileUploadLabel').text("Invalid");
+            $('#fileDateLabel').text("");
             return; 
         }
 
-        $('#fileUploadLabel').removeClass("btn btn-danger")
+        $('#fileUploadLabel').removeClass("btn btn-danger");
         $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
-        $('#fileUploadLabel').text(filename)
-        $('#fileDateLabel').text(date)
+        $('#fileUploadLabel').text(filename);
+        $('#fileDateLabel').text(date);
+    };
+
+    const isValidURL = (string) => {
+        try {
+            new URL(string);
+            return true;
+        }
+        catch (_) {
+            return false;
+        }
+    }
+
+    function handleProvision() {
+        var candidate_url = $('#provisionURL')[0].value
         
-        console.log(file)
-        console.log(filename, extension)
+        if(isValidURL(candidate_url)) {
+            $('#provisionButton').removeClass("btn btn-danger")
+            $('#provisionButton').removeClass("btn btn-secondary").addClass("btn btn-success");
+        }
+        else {
+            $('#provisionButton').removeClass("btn btn-secondary")
+            $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger");
+            return;
+        }
     };
 </script>
 {% endblock %}
