@@ -1,9 +1,9 @@
 """
-    file: ocd_gpio.py
+    file:    ocd_gpio.py
     version: 0.1.0
-    author: Adam Mitchell
-    brief: Simple Python script to enable full-duplex communication between a Thingpilot module
-           and Raspberry Pi via the control of level-shifting ICs
+    author:  Adam Mitchell
+    brief:   Simple Python script to enable full-duplex communication between a Thingpilot module
+             and Raspberry Pi via the control of level-shifting ICs
 """
 
 # Standard library imports
