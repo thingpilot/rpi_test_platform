@@ -31,15 +31,14 @@ def is_module_present(data):
     state = gpio.input(DETECT_PIN)
 
     if(state == 1):
-        print(f"{datetime.datetime.now()} *** Module connected, triggered by JS ***")
+        print(f"{datetime.datetime.now()} module_detect.py: Module connected, triggered by JS")
         sio.emit('MODULE_PRESENT')
     else:
-        print(f"{datetime.datetime.now()} *** Module disconnected, triggered by JS ***")
+        print(f"{datetime.datetime.now()} module_detect.py: Module disconnected, triggered by JS")
         sio.emit('MODULE_NOT_PRESENT')
 
 
 if __name__ == "__main__":
-    print(f"http://{app_utils.get_ip_address()}:80")
     sio.connect(f"http://{app_utils.get_ip_address()}:80")
 
     atexit.register(exit_handler)
@@ -57,10 +56,10 @@ if __name__ == "__main__":
             current_state = gpio.input(DETECT_PIN)
 
             if(current_state == 1 and previous_state == 0):
-                    print(f"{datetime.datetime.now()} *** Module connected ***")
+                    print(f"{datetime.datetime.now()} module_detect.py: Module connected")
                     sio.emit('MODULE_PRESENT')         
             elif(current_state == 0 and previous_state == 1):
-                    print(f"{datetime.datetime.now()} *** Module disconnected ***")
+                    print(f"{datetime.datetime.now()} module_detect.py:  Module disconnected")
                     sio.emit('MODULE_NOT_PRESENT')
 
             time.sleep(0.15)       

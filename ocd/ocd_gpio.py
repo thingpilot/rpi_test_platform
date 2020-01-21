@@ -21,12 +21,12 @@ U3_OUTPUT_ENABLE = 12
 
 # atexit handler
 def exit_handler():
-    print(f"{datetime.datetime.now()} *** OCD GPIO pin management terminated ***")
+    print(f"{datetime.datetime.now()} ocd_gpio.py: OCD GPIO pin management terminated")
     gpio.cleanup()
 
 
 if __name__ == "__main__":
-    print(f"{datetime.datetime.now()} *** OCD GPIO pin management initialising ***")
+    print(f"{datetime.datetime.now()} ocd_gpio.py: OCD GPIO pin management initialising")
     
     atexit.register(exit_handler)
 
@@ -40,10 +40,10 @@ if __name__ == "__main__":
     gpio.output(U2_OUTPUT_ENABLE, 1)
     gpio.output(U3_OUTPUT_ENABLE, 1)
 
-    print(f"{datetime.datetime.now()} *** OCD GPIO pin management ready ***")
+    print(f"{datetime.datetime.now()} ocd_gpio.py: OCD GPIO pin management ready")
 
     # If we terminate the script via Ctrl + C
     try:
         Event().wait()
     except KeyboardInterrupt:
-        print(f"{datetime.datetime.now()} *** OCD GPIO pin management terminating ***")
+        print(f"{datetime.datetime.now()} ocd_gpio.py: OCD GPIO pin management terminating")
