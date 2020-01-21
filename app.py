@@ -24,7 +24,7 @@ socketio = SocketIO(app, async_mode='eventlet')
 
 @app.route('/')
 def hello():
-    return "Hello, Adam"
+    return render_template("home.html")
 
 
 if __name__ == '__main__':
