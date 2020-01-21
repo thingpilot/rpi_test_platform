@@ -10,7 +10,7 @@ from os import urandom
 
 # 3rd-party library imports
 import eventlet
-from flask import Flask, render_template, escape, request
+from flask import Flask, render_template, escape, request, url_for
 from flask_socketio import SocketIO
 
 # Thingpilot library imports
@@ -23,8 +23,13 @@ socketio = SocketIO(app, async_mode='eventlet')
 
 
 @app.route('/')
-def hello():
+def home():
     return render_template("home.html")
+
+
+@app.route('/developer')
+def developer():
+    return render_template("developer.html")
 
 
 if __name__ == '__main__':
