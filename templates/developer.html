@@ -16,7 +16,9 @@
                 </div>
             </div>
             <div class="col-sm-4">
-                2
+                <button class="btn btn-danger" type="button" id="moduleDetectButton">
+                    Disconnected
+                </button>
             </div>  
             <div class="col-sm-4">
                 
@@ -26,6 +28,22 @@
 </div>
 
 <script>
+    var socket = io();
+
+    socket.on('js_module_present', function() {
+        $('#moduleDetectButton').text("Connected")
+        $('#moduleDetectButton').removeClass("btn btn-danger").addClass("btn btn-success");
+    });
+
+    socket.on('js_module_not_present', function() {
+        $('#moduleDetectButton').text("Disconnected")
+        $('#moduleDetectButton').removeClass("btn btn-success").addClass("btn btn-danger");
+    });
+
+    $(document).ready( () => {
+        socket.emit('is_module_present');
+    })
+
     $('.dropdown-item').click((event) => {
         var name = event.currentTarget;
         var module = name.getAttribute("data-name");
