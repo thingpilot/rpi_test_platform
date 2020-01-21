@@ -112,6 +112,9 @@
         $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
         $('#fileUploadLabel').text(filename);
         $('#fileDateLabel').text("Modified: " + date);
+
+        console.log(file[0])
+        socket.emit('firmware_upload', file[0])
     };
 
     function isValidURL(string) {

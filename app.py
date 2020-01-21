@@ -47,5 +47,10 @@ def is_module_present():
     socketio.emit('IS_MODULE_PRESENT')
 
 
+@socketio.on('firmware_upload')
+def handle_firmware_upload(firmware):
+    print(firmware)
+
+
 if __name__ == '__main__':
     socketio.run(app, host=app_utils.get_ip_address(), port=80, debug=True)
