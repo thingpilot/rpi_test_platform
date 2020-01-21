@@ -11,3 +11,4 @@ dependencies:
       - eventlet==0.25.1
       - flask-socketio==3.3.2
       - tornado==6.0.2
+      - socketIO-client==0.7.2
