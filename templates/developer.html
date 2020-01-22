@@ -33,9 +33,11 @@
         <p></p>
         <div class="row">
             <div class="col-sm-4">
-                <b>Select firmware:</b>
-                <input type="file" id="fileUploadButton" accept=".bin" onchange="handleUpload(this.files)">
-                <label class="btn btn-secondary" for="fileUploadButton" id="fileUploadLabel">Firmware</label>
+                <form method=post enctype=multipart/form-data id="firmwareUploadForm">
+                    <b>Select firmware:</b>
+                    <input type="file" id="fileUploadButton" accept=".bin" name=file onchange=handleUpload(this.files)>
+                    <label class="btn btn-secondary" for="fileUploadButton" id="fileUploadLabel">Firmware</label>
+                </form>
             </div>  
             <div class="col-sm-2">
                 <button class="btn btn-secondary" type="button" id="programButton">
@@ -96,26 +98,37 @@
     });
 
     function handleUpload(file) {
+        var form_data = new FormData($('#firmwareUploadForm')[0]);
+
         var filename = file[0].name;
         var extension = filename.split('.')[1].toLowerCase();
         var date = file[0].lastModifiedDate.toString().slice(0, 33);
 
-        if(extension != 'bin') 
-        {
-            $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
-            $('#fileUploadLabel').text("Invalid");
-            $('#fileDateLabel').text("Modified: ");
-            return; 
-        }
+        $.ajax({
+            data: form_data,
+            type: "POST",
+            url: "/firmware",
+            contentType: false, 
+            cache: false,
+            processData: false,
+            beforeSend: function() {
+                console.log("About to send form...");
+            },
+            success: function(data) {
+                $('#fileUploadLabel').removeClass("btn btn-danger");
+                $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
+                $('#fileUploadLabel').text(filename);
+                $('#fileDateLabel').text("Modified: " + date);
+            },
+            error: function(data) {
+                $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
+                $('#fileUploadLabel').text("Invalid");
+                $('#fileDateLabel').text("Modified: ");
+            }
+        });
 
-        $('#fileUploadLabel').removeClass("btn btn-danger");
-        $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
-        $('#fileUploadLabel').text(filename);
-        $('#fileDateLabel').text("Modified: " + date);
-
-        console.log(file[0])
-        socket.emit('firmware_upload', file[0])
-    };
+        $('#fileUploadButton').val("");
+    }
 
     function isValidURL(string) {
         var res = string.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
