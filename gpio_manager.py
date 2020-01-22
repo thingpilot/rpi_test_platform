@@ -29,6 +29,7 @@ sio = socketio.Client()
 
 def exit_handler():
     gpio.cleanup()
+    print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management terminating")
 
 
 @sio.on('IS_MODULE_PRESENT')

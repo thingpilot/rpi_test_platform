@@ -6,7 +6,7 @@
 """
 
 # Standard library imports
-import atexit
+import atexit, datetime
 from os import urandom, path, getcwd
 
 # 3rd-party library imports
@@ -151,6 +151,8 @@ def programming_unknown_error():
 
 def exit_handler():
     socketio.emit('SHUTDOWN')
+    print(f"{datetime.datetime.now()} app.py: *** TERMINATING APPLICATION ***")
+    exit()
 
 
 if __name__ == '__main__':

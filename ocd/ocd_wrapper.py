@@ -127,5 +127,9 @@ def program_and_verify(firmware_filename):
 if __name__ == '__main__':
     sio.connect(f"http://{get_ip_address()}:80")
 
-    while True:
-        time.sleep(1e6)
+    try:
+        while True:
+            time.sleep(1e6)
+    except KeyboardInterrupt:
+        print(f"{datetime.datetime.now()} ocd_wrapper.py: Terminating OpenOCD interface")
+        exit()
