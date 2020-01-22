@@ -8,6 +8,7 @@
 # Standard library imports
 import atexit, datetime
 from os import urandom, path, getcwd
+from time import sleep
 
 # 3rd-party library imports
 import eventlet
@@ -151,6 +152,7 @@ def programming_unknown_error():
 
 def exit_handler():
     socketio.emit('SHUTDOWN')
+    sleep(0.3)
     print(f"{datetime.datetime.now()} app.py: *** TERMINATING APPLICATION ***")
     exit()
 

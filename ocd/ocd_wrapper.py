@@ -125,7 +125,11 @@ def program_and_verify(firmware_filename):
     
 
 if __name__ == '__main__':
+    print(f"{datetime.datetime.now()} ocd_wrapper.py: Initialising OpenOCD interface")
+    
     sio.connect(f"http://{get_ip_address()}:80")
+
+    print(f"{datetime.datetime.now()} ocd_wrapper.py: OpenOCD interface ready")
 
     try:
         while True:

@@ -29,7 +29,7 @@ sio = socketio.Client()
 
 def exit_handler():
     gpio.cleanup()
-    print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management terminating")
+    print(f"{datetime.datetime.now()} gpio_manager.py: Terminating GPIO pin management interface")
 
 
 @sio.on('IS_MODULE_PRESENT')
@@ -50,10 +50,10 @@ def handle_shutdown():
 
 
 if __name__ == "__main__":
+    print(f"{datetime.datetime.now()} gpio_manager.py: Intialising GPIO pin management interface")
+
     sio.connect(f"http://{app_utils.get_ip_address()}:80")
     atexit.register(exit_handler)
-
-    print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management initialising")
 
     gpio.setmode(gpio.BCM)
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     current_state = 0
     previous_state = 0
 
-    print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management ready")
+    print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management interface ready")
 
     try:
         while True:
