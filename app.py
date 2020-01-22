@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 
 # Thingpilot library imports
 import app_utils
+from ocd import ocd_wrapper
 
 # Global Flask and SocketIO objects
 ALLOWED_EXTENSIONS = {'bin'}
@@ -79,7 +80,47 @@ def is_module_present():
 
 @socketio.on('start_programming')
 def start_programming(filename):
-    print(filename)
+    socketio.emit('START_PROGRAMMING', filename)
+
+
+@socketio.on('programming_started')
+def programming_started():
+    socketio.emit('js_programming_started')
+
+
+@socketio.on('programming_progress')
+def programming_progress(line):
+    socketio.emit('js_programming_progress', line)
+
+
+@socketio.on('programming_success')
+def programming_success():
+    socketio.emit('js_programming_success')
+
+
+@socketio.on('programming_verification_fail')
+def programming_verification_error():
+    socketio.emit('js_programming_verification_fail')
+
+
+@socketio.on('programming_flash_probe_failed')
+def programming_flash_probe_failed():
+    socketio.emit('js_programming_flash_probe_failed')
+
+
+@socketio.on('programming_fail_erase_flash')
+def programming_fail_erase_flash():
+    socketio.emit('js_programming_erase_flash')
+
+
+@socketio.on('programming_target_not_halted')
+def programming_target_not_halted():
+    socketio.emit('js_programming_target_not_halted')
+
+
+@socketio.on('programming_unknown_error')
+def programming_unknown_error():
+    socketio.emit('js_programming_unknown_error')
 
 
 if __name__ == '__main__':

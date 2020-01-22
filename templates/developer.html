@@ -63,7 +63,19 @@
             </div>
         </div>
     </div>
+    <p></p>
+    <div class="card">
+        <div class="card-body">
+            <pre class="pre-scrollable"> 
+<code id="terminal"> 
+</code>
+            </pre> 
+        </div>
+    </div>
 </div>
+
+    
+
 
 <script>
     var socket = io();
@@ -77,6 +89,52 @@
         $('#moduleDetectButton').text("Disconnected");
         $('#moduleDetectButton').removeClass("btn btn-success").addClass("btn btn-danger");
     });
+
+    socket.on('js_programming_started', function() {
+        bootstrap_alert.primary("Programming started...")
+
+        console.log($('#terminal').text())
+    })
+
+    socket.on('js_programming_progress', function(data) {
+        console.log(data)
+        $('#terminal').text(data + $('#terminal').text())
+    })
+
+    socket.on('js_programming_success', function() {
+        bootstrap_alert.success("Programming successful")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-success")
+    })
+
+    socket.on('js_programming_verification_fail', function(data) {
+        bootstrap_alert.warning("Failed to verify firmware")
+        $('#programButton').removeClass("btn btn-success")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
+    })
+
+    socket.on('js_programming_unknown_error', function() {
+        bootstrap_alert.warning("Unknown error whilst programming")
+        $('#programButton').removeClass("btn btn-success")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
+    })
+
+    socket.on('programming_flash_probe_failed', function() {
+        bootstrap_alert.warning("Flash probe failed during programming. Likely that CPU is not halted")
+        $('#programButton').removeClass("btn btn-success")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
+    })
+
+    socket.on('js_programming_fail_erase_flash', function() {
+        bootstrap_alert.warning("Failed to erase flash memory whilst programming")
+        $('#programButton').removeClass("btn btn-success")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
+    })
+
+    socket.on('programming_target_not_halted', function() {
+        bootstrap_alert.warning("Failed to halt target during programming")
+        $('#programButton').removeClass("btn btn-success")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
+    })
 
     $(document).ready( () => {
         socket.emit('is_module_present');
@@ -122,6 +180,7 @@
                 $('#fileDateLabel').text("Modified: " + date);
 
                 $('#programButton').prop('disabled', false);
+                $('#programButton').removeClass("btn btn-success")
                 $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary");
 
                 var upload_date = new Date().toLocaleString();
@@ -134,6 +193,7 @@
                 $('#fileDateLabel').text("Modified: ");
 
                 $('#programButton').prop('disabled', true);
+                $('#programButton').removeClass("btn btn-success")
                 $('#programButton').removeClass("btn btn-primary").addClass("btn btn-secondary");
 
                 var upload_date = new Date().toLocaleString();
@@ -154,7 +214,6 @@
     }
 
     function handleProgram() {
-        bootstrap_alert.primary("Programming started...")
         socket.emit('start_programming', $('#fileUploadLabel').text())
     }
 
