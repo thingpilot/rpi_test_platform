@@ -1,8 +1,9 @@
 """
-    file:    module_detect.py
+    file:    gpio_manager.py
     version: 0.1.0
     author:  Adam Mitchell
-    brief:   Detect the presence of a Thingpilot module and alert webserver using SocketIO
+    brief:   Detect the presence of a Thingpilot module and alert webserver using SocketIO and 
+             manage GPIOs that control hardware necessary for communications with module
 """
 
 # Standard library imports
@@ -18,6 +19,10 @@ import app_utils
 # GPIO definitions
 DETECT_PIN = 1
 
+BOOT0_PIN        = 0
+U2_OUTPUT_ENABLE = 16
+U3_OUTPUT_ENABLE = 12
+
 # Global SocketIO object
 sio = socketio.Client()
 
@@ -31,24 +36,35 @@ def is_module_present(data):
     state = gpio.input(DETECT_PIN)
 
     if(state == 1):
-        print(f"{datetime.datetime.now()} module_detect.py: Module connected, triggered by JS")
+        print(f"{datetime.datetime.now()} gpio_manager.py: Module connected, triggered by JS")
         sio.emit('MODULE_PRESENT')
     else:
-        print(f"{datetime.datetime.now()} module_detect.py: Module disconnected, triggered by JS")
+        print(f"{datetime.datetime.now()} gpio_manager.py: Module disconnected, triggered by JS")
         sio.emit('MODULE_NOT_PRESENT')
+
+
+@sio.on('SHUTDOWN')
+def handle_shutdown():
+    exit_handler()
 
 
 if __name__ == "__main__":
     sio.connect(f"http://{app_utils.get_ip_address()}:80")
-
     atexit.register(exit_handler)
+
+    print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management initialising")
 
     gpio.setmode(gpio.BCM)
 
     gpio.setup(DETECT_PIN, gpio.IN)
+    gpio.setup(BOOT0_PIN, gpio.OUT, initial=0)
+    gpio.setup(U2_OUTPUT_ENABLE, gpio.OUT, initial=1)
+    gpio.setup(U3_OUTPUT_ENABLE, gpio.OUT, initial=1)
 
     current_state = 0
     previous_state = 0
+
+    print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management ready")
 
     try:
         while True:
@@ -56,10 +72,10 @@ if __name__ == "__main__":
             current_state = gpio.input(DETECT_PIN)
 
             if(current_state == 1 and previous_state == 0):
-                    print(f"{datetime.datetime.now()} module_detect.py: Module connected")
+                    print(f"{datetime.datetime.now()} gpio_manager.py: Module connected")
                     sio.emit('MODULE_PRESENT')         
             elif(current_state == 0 and previous_state == 1):
-                    print(f"{datetime.datetime.now()} module_detect.py:  Module disconnected")
+                    print(f"{datetime.datetime.now()} gpio_manager.py:  Module disconnected")
                     sio.emit('MODULE_NOT_PRESENT')
 
             time.sleep(0.15)       
