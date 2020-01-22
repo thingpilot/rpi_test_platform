@@ -1,6 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block body %}
+<div id="alert_placeholder"></div>
 <div class="jumbotron">
     <div class="container">
         <div class="row">
@@ -119,11 +120,27 @@
                 $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
                 $('#fileUploadLabel').text(filename);
                 $('#fileDateLabel').text("Modified: " + date);
+
+                var upload_date = new Date().toLocaleString();
+
+                bootstrap_alert.success("Successfully uploaded " + filename + " at " + upload_date);
             },
             error: function(data) {
                 $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
                 $('#fileUploadLabel').text("Invalid");
                 $('#fileDateLabel').text("Modified: ");
+
+                var upload_date = new Date().toLocaleString();
+
+                if(data.status == 400) {
+                    bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date);
+                }
+                else if(data.status == 415) {
+                    bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date);
+                }
+                else {
+                    bootstrap_alert.warning("Unknown error at " + upload_date);
+                }
             }
         });
 
@@ -148,6 +165,20 @@
             return;
         }
     };
+
+    bootstrap_alert = function() {}
+
+    bootstrap_alert.success = function(message) {
+        $('#alert_placeholder').html('<div class="alert alert-success"><span>'+message+'</span></div>')
+    }
+
+    bootstrap_alert.warning = function(message) {
+        $('#alert_placeholder').html('<div class="alert alert-danger"><span>'+message+'</span></div>')
+    }
+
+    bootstrap_alert.primary = function(message) {
+        $('#alert_placeholder').html('<div class="alert alert-primary"><span>'+message+'</span></div>')
+    }
 </script>
 {% endblock %}
 
