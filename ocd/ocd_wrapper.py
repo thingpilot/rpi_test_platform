@@ -124,7 +124,6 @@ def program_and_verify(firmware_filename):
     os.chdir(default_working_directory)
     
 
-
 if __name__ == '__main__':
     sio.connect(f"http://{get_ip_address()}:80")
 
