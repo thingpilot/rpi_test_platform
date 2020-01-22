@@ -41,7 +41,7 @@
                 </form>
             </div>  
             <div class="col-sm-2">
-                <button class="btn btn-secondary" type="button" id="programButton">
+                <button class="btn btn-secondary" type="button" id="programButton" disabled onclick=handleProgram()>
                     Program
                 </button>
             </div>  
@@ -113,13 +113,16 @@
             cache: false,
             processData: false,
             beforeSend: function() {
-                console.log("About to send form...");
+                
             },
             success: function(data) {
                 $('#fileUploadLabel').removeClass("btn btn-danger");
                 $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
                 $('#fileUploadLabel').text(filename);
                 $('#fileDateLabel').text("Modified: " + date);
+
+                $('#programButton').prop('disabled', false);
+                $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary");
 
                 var upload_date = new Date().toLocaleString();
 
@@ -129,6 +132,9 @@
                 $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
                 $('#fileUploadLabel').text("Invalid");
                 $('#fileDateLabel').text("Modified: ");
+
+                $('#programButton').prop('disabled', true);
+                $('#programButton').removeClass("btn btn-primary").addClass("btn btn-secondary");
 
                 var upload_date = new Date().toLocaleString();
 
@@ -145,6 +151,11 @@
         });
 
         $('#fileUploadButton').val("");
+    }
+
+    function handleProgram() {
+        bootstrap_alert.primary("Programming started...")
+        socket.emit('start_programming', $('#fileUploadLabel').text())
     }
 
     function isValidURL(string) {

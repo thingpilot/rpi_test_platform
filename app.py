@@ -77,9 +77,9 @@ def is_module_present():
     socketio.emit('IS_MODULE_PRESENT')
 
 
-@socketio.on('firmware_upload')
-def handle_firmware_upload(firmware):
-    print(firmware)
+@socketio.on('start_programming')
+def start_programming(filename):
+    print(filename)
 
 
 if __name__ == '__main__':
