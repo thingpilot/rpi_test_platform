@@ -1,3 +1,7 @@
-#fileUploadButton {
+#firmwareUploadButton {
+    display: none;
+}
+
+#testUploadButton {
     display: none;
 }

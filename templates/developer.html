@@ -36,8 +36,8 @@
             <div class="col-sm-4">
                 <form method=post enctype=multipart/form-data id="firmwareUploadForm">
                     <b>Select firmware:</b>
-                    <input type="file" id="fileUploadButton" accept=".bin" name=file onchange=handleUpload(this.files)>
-                    <label class="btn btn-secondary" for="fileUploadButton" id="fileUploadLabel">Firmware</label>
+                    <input type="file" id="firmwareUploadButton" accept=".bin" name=file onchange=handleFirmwareUpload(this.files)>
+                    <label class="btn btn-secondary" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
                 </form>
             </div>  
             <div class="col-sm-2">
@@ -46,7 +46,7 @@
                 </button>
             </div>  
             <div class="col-sm-6">
-                <label id="fileDateLabel">Modified: </label>
+                <label id="firmwareDateLabel">Modified: </label>
             </div>
         </div>
         <p></p>
@@ -62,6 +62,24 @@
             <div class="col-sm-6">
             </div>
         </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <form method=post enctype=multipart/form-data id="testUploadForm">
+                    <b>Select test:</b>
+                    <input type="file" id="testUploadButton" accept=".py" name=file onchange=handleTestUpload(this.files)>
+                    <label class="btn btn-secondary" for="testUploadButton" id="testUploadLabel">Test</label>
+                </form>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-secondary" type="button" id="testButton" disabled onclick=handleTest()>
+                    Test
+                </button>
+            </div>  
+            <div class="col-sm-6">
+                <label id="testDateLabel">Modified: </label>
+            </div>
+        </div>
     </div>
     <p></p>
     <div class="card">
@@ -74,11 +92,9 @@
     </div>
 </div>
 
-    
-
-
 <script>
     var socket = io();
+    var pgm_start_time;
 
     socket.on('js_module_present', function() {
         $('#moduleDetectButton').text("Connected");
@@ -92,17 +108,16 @@
 
     socket.on('js_programming_started', function() {
         bootstrap_alert.primary("Programming started...")
-
-        console.log($('#terminal').text())
+        pgm_start_time = new Date().getTime();
     })
 
     socket.on('js_programming_progress', function(data) {
-        console.log(data)
         $('#terminal').text(data + $('#terminal').text())
     })
 
     socket.on('js_programming_success', function() {
-        bootstrap_alert.success("Programming successful")
+        var pgm_end_time = new Date().getTime();
+        bootstrap_alert.success("Programming successful. Took: " + (pgm_end_time - pgm_start_time) + "ms")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-success")
     })
 
@@ -156,7 +171,7 @@
         }
     });
 
-    function handleUpload(file) {
+    function handleFirmwareUpload(file) {
         var form_data = new FormData($('#firmwareUploadForm')[0]);
 
         var filename = file[0].name;
@@ -174,10 +189,10 @@
                 
             },
             success: function(data) {
-                $('#fileUploadLabel').removeClass("btn btn-danger");
-                $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
-                $('#fileUploadLabel').text(filename);
-                $('#fileDateLabel').text("Modified: " + date);
+                $('#firmwareUploadLabel').removeClass("btn btn-danger");
+                $('#firmwareUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
+                $('#firmwareUploadLabel').text(filename);
+                $('#firmwareDateLabel').text("Modified: " + date);
 
                 $('#programButton').prop('disabled', false);
                 $('#programButton').removeClass("btn btn-success")
@@ -188,9 +203,9 @@
                 bootstrap_alert.success("Successfully uploaded " + filename + " at " + upload_date);
             },
             error: function(data) {
-                $('#fileUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
-                $('#fileUploadLabel').text("Invalid");
-                $('#fileDateLabel').text("Modified: ");
+                $('#firmwareUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
+                $('#firmwareUploadLabel').text("Invalid");
+                $('#firmwareDateLabel').text("Modified: ");
 
                 $('#programButton').prop('disabled', true);
                 $('#programButton').removeClass("btn btn-success")
@@ -210,11 +225,72 @@
             }
         });
 
-        $('#fileUploadButton').val("");
+        $('#firmwareUploadButton').val("");
     }
 
     function handleProgram() {
-        socket.emit('start_programming', $('#fileUploadLabel').text())
+        socket.emit('start_programming', $('#firmwareUploadLabel').text())
+    }
+
+    function handleTestUpload(file) {
+        var form_data = new FormData($('#testUploadForm')[0]);
+
+        var filename = file[0].name;
+        var extension = filename.split('.')[1].toLowerCase();
+        var date = file[0].lastModifiedDate.toString().slice(0, 33);
+
+        $.ajax({
+            data: form_data,
+            type: "POST",
+            url: "/test",
+            contentType: false, 
+            cache: false,
+            processData: false,
+            beforeSend: function() {
+                
+            },
+            success: function(data) {
+                $('#testUploadLabel').removeClass("btn btn-danger");
+                $('#testUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
+                $('#testUploadLabel').text(filename);
+                $('#testDateLabel').text("Modified: " + date);
+
+                $('#testButton').prop('disabled', false);
+                $('#testButton').removeClass("btn btn-success")
+                $('#testButton').removeClass("btn btn-secondary").addClass("btn btn-primary");
+
+                var upload_date = new Date().toLocaleString();
+
+                bootstrap_alert.success("Successfully uploaded " + filename + " at " + upload_date);
+            },
+            error: function(data) {
+                $('#testUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
+                $('#testUploadLabel').text("Invalid");
+                $('#testDateLabel').text("Modified: ");
+
+                $('#testButton').prop('disabled', true);
+                $('#testButton').removeClass("btn btn-success")
+                $('#testButton').removeClass("btn btn-primary").addClass("btn btn-secondary");
+
+                var upload_date = new Date().toLocaleString();
+
+                if(data.status == 400) {
+                    bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date);
+                }
+                else if(data.status == 415) {
+                    bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date);
+                }
+                else {
+                    bootstrap_alert.warning("Unknown error at " + upload_date);
+                }
+            }
+        });
+
+        $('#testUploadButton').val("");
+    }
+
+    function handleTest() {
+
     }
 
     function isValidURL(string) {

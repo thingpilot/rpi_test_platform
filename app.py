@@ -6,6 +6,7 @@
 """
 
 # Standard library imports
+import atexit
 from os import urandom, path, getcwd
 
 # 3rd-party library imports
@@ -19,12 +20,15 @@ import app_utils
 from ocd import ocd_wrapper
 
 # Global Flask and SocketIO objects
-ALLOWED_EXTENSIONS = {'bin'}
+ALLOWED_FW_EXTENSIONS = {'bin'}
+ALLOWED_TEST_EXTENSIONS = {'py'}
 FIRMWARE_FOLDER = '/ocd/firmware'
+TEST_FOLDER = '/module_tests'
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = f"{urandom(64)}"
 app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
+app.config['TEST_FOLDER'] = TEST_FOLDER
 socketio = SocketIO(app, async_mode='eventlet')
 
 
@@ -33,9 +37,13 @@ def home():
     return render_template("home.html")
 
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def allowed_file(filename, type):
+    if type == 'FW':
+        return '.' in filename and \
+            filename.rsplit('.', 1)[1].lower() in ALLOWED_FW_EXTENSIONS
+    elif type == 'TEST':
+        return '.' in filename and \
+            filename.rsplit('.', 1)[1].lower() in ALLOWED_TEST_EXTENSIONS
 
 
 @app.route('/firmware', methods=['POST'])
@@ -49,13 +57,31 @@ def firmware_upload():
         if file.filename == '':
             return Response(status=400)
 
-        if allowed_file(file.filename):
+        if allowed_file(file.filename, 'FW'):
             filename = secure_filename(file.filename)
             file.save(f"{getcwd()}{path.join(app.config['FIRMWARE_FOLDER'], filename)}")
             return Response(status=201)
         else:
             return Response(status=400)
-        
+
+
+@app.route('/test', methods=['POST'])
+def test_upload():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return Response(status=415)
+
+        file = request.files['file']
+
+        if file.filename == '':
+            return Response(status=400)
+
+        if allowed_file(file.filename, 'TEST'):
+            filename = secure_filename(file.filename)
+            file.save(f"{getcwd()}{path.join(app.config['TEST_FOLDER'], filename)}")
+            return Response(status=201)
+        else:
+            return Response(status=400)
 
 
 @app.route('/developer')
@@ -123,5 +149,10 @@ def programming_unknown_error():
     socketio.emit('js_programming_unknown_error')
 
 
+def exit_handler():
+    socketio.emit('SHUTDOWN')
+
+
 if __name__ == '__main__':
+    atexit.register(exit_handler)
     socketio.run(app, host=app_utils.get_ip_address(), port=80, debug=True)
