@@ -19,21 +19,12 @@ import app_utils
 
 # Global Flask and SocketIO objects
 ALLOWED_EXTENSIONS = {'bin'}
-UPLOAD_FOLDER = '/ocd/firmware'
+FIRMWARE_FOLDER = '/ocd/firmware'
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = f"{urandom(64)}"
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
 socketio = SocketIO(app, async_mode='eventlet')
-
-
-@app.after_request
-def add_header(r):
-    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    r.headers["Pragma"] = "no-cache"
-    r.headers["Expires"] = "0"
-    r.headers['Cache-Control'] = 'public, max-age=0'
-    return r
 
 
 @app.route('/')
@@ -49,25 +40,21 @@ def allowed_file(filename):
 @app.route('/firmware', methods=['POST'])
 def firmware_upload():
     if request.method == 'POST':
-        print("POST POST POST POST POST")
-        print(getcwd())
-
         if 'file' not in request.files:
-            flash('File not in request.files!', 'danger')
-            return redirect(request.url)
+            return Response(status=415)
         
         file = request.files['file']
 
         if file.filename == '':
-            flash('No file selected!', 'danger')
-            return redirect(request.url)
+            return Response(status=400)
 
         if allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            print(f"{getcwd()}{path.join(app.config['UPLOAD_FOLDER'], filename)}")
-            print(path.join(app.config['UPLOAD_FOLDER'], filename))
-            file.save(f"{getcwd()}{path.join(app.config['UPLOAD_FOLDER'], filename)}")
+            file.save(f"{getcwd()}{path.join(app.config['FIRMWARE_FOLDER'], filename)}")
             return Response(status=201)
+        else:
+            return Response(status=400)
+        
 
 
 @app.route('/developer')
