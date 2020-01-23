@@ -7,7 +7,7 @@
 """
 
 # Standard library imports
-import functools, signal, socket
+import functools, signal, socket, sys
 
 
 class TimeoutError(Exception): 
@@ -58,6 +58,12 @@ class OCD():
         data = data[:-1]
 
         return data
+
+    def connect(self):
+        self.__enter__()
+
+    def disconnect(self):
+        self.__exit__(*sys.exc_info())
 
     def get_buffer_size(self):
         return self.buffer_size
