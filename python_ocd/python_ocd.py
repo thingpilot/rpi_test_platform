@@ -78,6 +78,8 @@ class OCD():
                 pass
             finally:
                 signal.alarm(0)
+        else:
+            recv_data = self._recv()
 
         if not self.timeout_flag:
             if recv_string is not None:
