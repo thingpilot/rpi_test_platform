@@ -59,6 +59,14 @@ class OCD():
 
         return data
 
+    def get_buffer_size(self):
+        return self.buffer_size
+
+    def set_buffer_size(self, buffer_size_bytes):
+        self.buffer_size(buffer_size_bytes)
+
+        return self.get_buffer_size()
+
     @_reset_timeout_flag
     def send(self, command, recv_string=None, timeout_s=10):
         success = False
