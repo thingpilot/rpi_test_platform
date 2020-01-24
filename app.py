@@ -27,6 +27,7 @@ FIRMWARE_FOLDER = '/python_ocd/firmware'
 TEST_FOLDER = '/module_tests'
 
 app = Flask(__name__)
+
 app.config['SECRET_KEY'] = f"{urandom(64)}"
 app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
 app.config['TEST_FOLDER'] = TEST_FOLDER

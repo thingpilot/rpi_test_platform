@@ -23,9 +23,7 @@
                 </div>
             </div>
             <div class="col-sm-2">
-                <button class="btn btn-danger" type="button" id="moduleDetectButton">
-                    Disconnected
-                </button>
+                <img src="../static/images/Wright.png" alt="cool module" class="grayable" id="modulePicture">
             </div>  
             <div class="col-sm-6">
                 
@@ -98,8 +96,7 @@
     var fw_filename = null;
 
     socket.on('js_module_present', function() {
-        $('#moduleDetectButton').text("Connected");
-        $('#moduleDetectButton').removeClass("btn btn-danger").addClass("btn btn-success");
+        $('#modulePicture').removeClass("grayed");
 
         if(fw_filename != null) {
             $('#programButton').prop('disabled', false);
@@ -107,9 +104,9 @@
     });
 
     socket.on('js_module_not_present', function() {
-        $('#moduleDetectButton').text("Disconnected");
-        $('#moduleDetectButton').removeClass("btn btn-success").addClass("btn btn-danger");
         $('#programButton').prop('disabled', true);
+
+        $('#modulePicture').addClass("grayed");
     });
 
     function programProgressIndicator() {
@@ -127,6 +124,7 @@
         bootstrap_alert.primary("Programming started...")
         $('#programButton').removeClass("btn btn-danger")
         $('#programButton').removeClass("btn btn-success").addClass("btn btn-primary")
+        $('#modulePicture').addClass("rotate")
         $('#terminal').text("Programming started\n" + $('#terminal').text())
         $('#terminal').text("\n" + $('#terminal').text())
         programProgressIndicatorInterval()
@@ -144,6 +142,7 @@
         $('#terminal').text("Programming success! Took: " + (pgm_end_time - pgm_start_time) + "ms\n" + $('#terminal').text())
         $('#programButton').removeClass("btn btn-danger")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-success")
+        $('#modulePicture').removeClass("rotate")
     })
 
     socket.on('js_programming_error', function(data) {
@@ -153,6 +152,7 @@
         $('#terminal').text("Programming failed. Took: " + (pgm_end_time - pgm_start_time) + "ms\n" + $('#terminal').text())
         $('#programButton').removeClass("btn btn-success")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
+        $('#modulePicture').removeClass("rotate")
     })
 
     $(document).ready( () => {
@@ -172,6 +172,9 @@
         {
             $('#moduleSelectButton').text(name.getAttribute("data-name"));
             $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle");
+
+            
+            $('#modulePicture').attr("src", "../static/images/" + module + ".png")
         }
     });
 

@@ -88,7 +88,7 @@ if __name__ == "__main__":
                         print(f"{datetime.datetime.now()} gpio_manager.py: Module connected")
                         sio.emit('MODULE_PRESENT')         
                 elif(current_state == 0 and previous_state == 1):
-                        print(f"{datetime.datetime.now()} gpio_manager.py:  Module disconnected")
+                        print(f"{datetime.datetime.now()} gpio_manager.py: Module disconnected")
                         sio.emit('MODULE_NOT_PRESENT')
 
                 time.sleep(0.15)       
