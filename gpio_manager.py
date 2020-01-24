@@ -50,35 +50,50 @@ def handle_shutdown():
 
 
 if __name__ == "__main__":
+    atexit.register(exit_handler)
+    connected = False
+
     print(f"{datetime.datetime.now()} gpio_manager.py: Intialising GPIO pin management interface")
 
-    sio.connect(f"http://{app_utils.get_ip_address()}:80")
-    atexit.register(exit_handler)
+    for i in range(1, 10):
+        print(f"{datetime.datetime.now()} gpio_manager.py: Attempt {i} connecting to {app_utils.get_ip_address()}:80")
+        
+        try:    
+            sio.connect(f"http://{app_utils.get_ip_address()}:80")
+            connected = True
+            break
+        except socketio.exceptions.ConnectionError:
+            time.sleep(1)
 
-    gpio.setmode(gpio.BCM)
+    if connected:
 
-    gpio.setup(DETECT_PIN, gpio.IN)
-    gpio.setup(BOOT0_PIN, gpio.OUT, initial=0)
-    gpio.setup(U2_OUTPUT_ENABLE, gpio.OUT, initial=1)
-    gpio.setup(U3_OUTPUT_ENABLE, gpio.OUT, initial=1)
+        gpio.setmode(gpio.BCM)
 
-    current_state = 0
-    previous_state = 0
+        gpio.setup(DETECT_PIN, gpio.IN)
+        gpio.setup(BOOT0_PIN, gpio.OUT, initial=0)
+        gpio.setup(U2_OUTPUT_ENABLE, gpio.OUT, initial=1)
+        gpio.setup(U3_OUTPUT_ENABLE, gpio.OUT, initial=1)
 
-    print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management interface ready")
+        current_state = 0
+        previous_state = 0
 
-    try:
-        while True:
-            previous_state = current_state
-            current_state = gpio.input(DETECT_PIN)
+        print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management interface ready")
 
-            if(current_state == 1 and previous_state == 0):
-                    print(f"{datetime.datetime.now()} gpio_manager.py: Module connected")
-                    sio.emit('MODULE_PRESENT')         
-            elif(current_state == 0 and previous_state == 1):
-                    print(f"{datetime.datetime.now()} gpio_manager.py:  Module disconnected")
-                    sio.emit('MODULE_NOT_PRESENT')
+        try:
+            while True:
+                previous_state = current_state
+                current_state = gpio.input(DETECT_PIN)
 
-            time.sleep(0.15)       
-    except KeyboardInterrupt:
-        pass
+                if(current_state == 1 and previous_state == 0):
+                        print(f"{datetime.datetime.now()} gpio_manager.py: Module connected")
+                        sio.emit('MODULE_PRESENT')         
+                elif(current_state == 0 and previous_state == 1):
+                        print(f"{datetime.datetime.now()} gpio_manager.py:  Module disconnected")
+                        sio.emit('MODULE_NOT_PRESENT')
+
+                time.sleep(0.15)       
+        except KeyboardInterrupt:
+            pass
+    
+    else:
+        print(f"{datetime.datetime.now()} gpio_manager.py: Failed to connect to {app_utils.get_ip_address()}:80. Server is down?")
