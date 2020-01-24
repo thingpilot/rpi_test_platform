@@ -95,15 +95,21 @@
 <script>
     var socket = io();
     var pgm_start_time;
+    var fw_filename = null;
 
     socket.on('js_module_present', function() {
         $('#moduleDetectButton').text("Connected");
         $('#moduleDetectButton').removeClass("btn btn-danger").addClass("btn btn-success");
+
+        if(fw_filename != null) {
+            $('#programButton').prop('disabled', false);
+        }
     });
 
     socket.on('js_module_not_present', function() {
         $('#moduleDetectButton').text("Disconnected");
         $('#moduleDetectButton').removeClass("btn btn-success").addClass("btn btn-danger");
+        $('#programButton').prop('disabled', true);
     });
 
     function programProgressIndicator() {
@@ -173,6 +179,7 @@
         var form_data = new FormData($('#firmwareUploadForm')[0]);
 
         var filename = file[0].name;
+        fw_filename = filename;
         var extension = filename.split('.')[1].toLowerCase();
         var date = file[0].lastModifiedDate.toString().slice(0, 33);
 
