@@ -106,8 +106,24 @@
         $('#moduleDetectButton').removeClass("btn btn-success").addClass("btn btn-danger");
     });
 
+    function programProgressIndicator() {
+        $('#terminal').text("." + $('#terminal').text())
+    }
+
+    var programProgressIndicatorIntervalId;
+
+    function programProgressIndicatorInterval() {
+        programProgressIndicator();
+        programProgressIndicatorIntervalId = setInterval(programProgressIndicator, 500);
+    }
+
     socket.on('js_programming_started', function() {
         bootstrap_alert.primary("Programming started...")
+        $('#programButton').removeClass("btn btn-danger")
+        $('#programButton').removeClass("btn btn-success").addClass("btn btn-primary")
+        $('#terminal').text("Programming started\n" + $('#terminal').text())
+        $('#terminal').text("\n" + $('#terminal').text())
+        programProgressIndicatorInterval()
         pgm_start_time = new Date().getTime();
     })
 
@@ -118,37 +134,17 @@
     socket.on('js_programming_success', function() {
         var pgm_end_time = new Date().getTime();
         bootstrap_alert.success("Programming successful. Took: " + (pgm_end_time - pgm_start_time) + "ms")
+        clearInterval(programProgressIndicatorIntervalId)
+        $('#programButton').removeClass("btn btn-danger")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-success")
     })
 
-    socket.on('js_programming_verification_fail', function(data) {
-        bootstrap_alert.warning("Failed to verify firmware")
+    socket.on('js_programming_error', function(data) {
+        var pgm_end_time = new Date().getTime();
+        bootstrap_alert.warning("Programming failed. Took: " + (pgm_end_time - pgm_start_time) + "ms. " + data)
+        clearInterval(programProgressIndicatorIntervalId)
         $('#programButton').removeClass("btn btn-success")
-        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
-    })
-
-    socket.on('js_programming_unknown_error', function() {
-        bootstrap_alert.warning("Unknown error whilst programming")
-        $('#programButton').removeClass("btn btn-success")
-        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
-    })
-
-    socket.on('programming_flash_probe_failed', function() {
-        bootstrap_alert.warning("Flash probe failed during programming. Likely that CPU is not halted")
-        $('#programButton').removeClass("btn btn-success")
-        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
-    })
-
-    socket.on('js_programming_fail_erase_flash', function() {
-        bootstrap_alert.warning("Failed to erase flash memory whilst programming")
-        $('#programButton').removeClass("btn btn-success")
-        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
-    })
-
-    socket.on('programming_target_not_halted', function() {
-        bootstrap_alert.warning("Failed to halt target during programming")
-        $('#programButton').removeClass("btn btn-success")
-        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
     })
 
     $(document).ready( () => {
