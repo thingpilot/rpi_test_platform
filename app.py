@@ -18,12 +18,12 @@ from werkzeug.utils import secure_filename
 
 # Thingpilot library imports
 import app_utils
-from ocd import ocd_wrapper
+from python_ocd.targets import stm32l0
 
 # Global Flask and SocketIO objects
 ALLOWED_FW_EXTENSIONS = {'bin'}
 ALLOWED_TEST_EXTENSIONS = {'py'}
-FIRMWARE_FOLDER = '/ocd/firmware'
+FIRMWARE_FOLDER = '/python_ocd/firmware'
 TEST_FOLDER = '/module_tests'
 
 app = Flask(__name__)
@@ -107,8 +107,9 @@ def is_module_present():
 
 @socketio.on('start_programming')
 def start_programming(filename):
-    socketio.emit('START_PROGRAMMING', filename)
-
+    with stm32l0.STM32L0() as cpu:
+        for result in cpu.program_bin(filename, stm32l0.STM32L0.PGM_START_ADDRESS):
+            socketio.emit('js_programming_process', result['message'])
 
 @socketio.on('programming_started')
 def programming_started():
