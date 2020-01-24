@@ -97,7 +97,10 @@ class OCDTarget(OCD):
         return result
 
     def program_bin(self, firmware, address, verify=True):
-        firmware = f'../firmware/{firmware}'
+        if __name__ == '__main__':
+            firmware = f'../firmware/{firmware}'
+        else:
+            firmware = f'python_ocd/firmware/{firmware}'
 
         func_dict = { 'init': 'self.init()',
                       'reset halt': 'self.reset_halt()',
