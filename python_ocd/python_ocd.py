@@ -33,7 +33,11 @@ class OCD():
     INIT_DELAY    = 0.1
 
     def __init__(self, openocd_cfg, tcl_ip='localhost', tcl_port=6666):
-        self.openocd_cfg = f'../configs/{openocd_cfg}'
+        if __name__ == '__main__':
+            self.openocd_cfg = f'../configs/{openocd_cfg}'
+        else:
+            self.openocd_cfg = f'python_ocd/configs/{openocd_cfg}'
+            
         self.tcl_ip = tcl_ip
         self.tcl_port = tcl_port
         self.buffer_size = 4096
@@ -65,8 +69,8 @@ class OCD():
             self._deinit_openocd()
             return False
 
-        signal.signal(signal.SIGALRM, self._handle_timeout)
-        signal.alarm(timeout_s)
+        timer = threading.Timer(timeout_s, self._handle_timeout)
+        timer.start()
 
         try:
             for line in process.stderr:
@@ -78,7 +82,7 @@ class OCD():
         except TimeoutError:
             pass
         finally:
-            signal.alarm(0)
+            timer.cancel()
 
         if self.timeout_flag:
             return False
@@ -87,7 +91,10 @@ class OCD():
 
     def __enter__(self):
         if self._init_openocd():
-            self.sock.connect((self.tcl_ip, self.tcl_port))
+            try:
+                self.sock.connect((self.tcl_ip, self.tcl_port))
+            except ConnectionError:
+                return False
         
         return self
 
@@ -137,15 +144,15 @@ class OCD():
             return { 'success': False, 'message': 'Failed to send to Tcl server. Server appears to be down', 'error': e}
 
         if timeout_s:
-            signal.signal(signal.SIGALRM, self._handle_timeout)
-            signal.alarm(timeout_s)
+            timer = threading.Timer(timeout_s, self._handle_timeout)
+            timer.start()
             
             try:
                 recv_data = self._recv()
             except TimeoutError: 
                 pass
             finally:
-                signal.alarm(0)
+                timer.cancel()
         else:
             recv_data = self._recv()
 
