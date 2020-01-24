@@ -7,7 +7,21 @@
 """
 
 # Standard library imports
-import functools, os, signal, socket, subprocess, sys, time
+import functools
+import os
+import subprocess
+import sys
+import time
+
+try:
+    import thread
+except ImportError:
+    import _thread as thread
+
+# Import eventlet compatible socket and threading libraries
+import eventlet
+socket = eventlet.import_patched('socket')
+threading = eventlet.import_patched('threading')
 
 
 class TimeoutError(Exception): 
