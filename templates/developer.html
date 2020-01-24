@@ -135,6 +135,7 @@
         var pgm_end_time = new Date().getTime();
         bootstrap_alert.success("Programming successful. Took: " + (pgm_end_time - pgm_start_time) + "ms")
         clearInterval(programProgressIndicatorIntervalId)
+        $('#terminal').text("Programming success! Took: " + (pgm_end_time - pgm_start_time) + "ms\n" + $('#terminal').text())
         $('#programButton').removeClass("btn btn-danger")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-success")
     })
@@ -143,6 +144,7 @@
         var pgm_end_time = new Date().getTime();
         bootstrap_alert.warning("Programming failed. Took: " + (pgm_end_time - pgm_start_time) + "ms. " + data)
         clearInterval(programProgressIndicatorIntervalId)
+        $('#terminal').text("Programming failed. Took: " + (pgm_end_time - pgm_start_time) + "ms\n" + $('#terminal').text())
         $('#programButton').removeClass("btn btn-success")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
     })
