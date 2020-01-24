@@ -10,13 +10,17 @@
 # Standard library imports
 import inspect, os, re, sys
 
-# Append parent directory to path so that we can import from there
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir) 
 
-# Import the OCD interface from python_ocd.py
-from python_ocd import OCD
+if __name__ == '__main__':
+    # Append parent directory to path so that we can import from there
+    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    parentdir = os.path.dirname(currentdir)
+    sys.path.insert(0, parentdir) 
+
+    # Import the OCD interface from python_ocd.py
+    from python_ocd import OCD
+else:
+    from python_ocd.python_ocd import OCD
 
 
 class OCDTarget(OCD):
@@ -107,7 +111,7 @@ class OCDTarget(OCD):
             if not result['success']:
                 result['message'] = f'{result["message"]}: {name}'
                 yield result
-                
+
                 break
             else:
                 yield result

@@ -6,16 +6,15 @@
              extraction of the STM32 unique ID.
 """
 
-# Import Parent target class
-from target import OCDTarget
+if __name__ == '__main__':
+    # Import Parent target class
+    from target.target import OCDTarget
+else:
+    from python_ocd.targets.target import OCDTarget
 
 
 class STM32L0(OCDTarget):
+    PGM_START_ADDRESS = '0x08000000'
+
     def __init__(self, openocd_cfg='stm32l0_ocd.cfg', tcl_ip='localhost', tcl_port=6666):
         super().__init__(openocd_cfg, tcl_ip, tcl_port)
-
-
-if __name__ == '__main__':
-    with STM32L0() as cpu:
-        for result in cpu.program_bin('blink-fast.bin', '0x08000000'):
-            print(result)
