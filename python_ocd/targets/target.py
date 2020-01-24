@@ -22,37 +22,47 @@ from python_ocd import OCD
 class OCDTarget(OCD):
     STATES = [ 'unknown', 'halted', 'running', 'reset', 'debug-running' ]
 
-    def __init__(self, tcl_ip='localhost', tcl_port=6666):
-        super().__init__(tcl_ip, tcl_port)
+    def __init__(self, openocd_cfg, tcl_ip='localhost', tcl_port=6666):
+        super().__init__(openocd_cfg, tcl_ip, tcl_port)
 
     def get_state(self):
-        targets = self.send('targets')
+        result = self.send('targets')
         state = ''
 
-        for state in OCDTarget.STATES:
-            if state in targets['message']:
-                return state
+        if result['success']:
+            for state in OCDTarget.STATES:
+                if state in result['message']:
+                    result['state'] = state
+                    break
+            
+            result['success'] = False
+        else:
+            result['success'] = False
 
-        return False
+        return result
 
     def init(self):
         return self.send('init')
 
     def reset_run(self, verify=True):
         result = self.send('reset run')
+
+        state = self.get_state()
+        if state['success']:   
+            if verify:
+                return self.get_state()['state'] == 'running'
         
-        if verify:
-            return self.get_state() == 'running'
-        else:
-            return result
+        return result
 
     def reset_halt(self, verify=True):
         result = self.send('reset halt')
         
-        if verify:
-            return self.get_state() == 'halted'
-        else:
-            return result
+        state = self.get_state()
+        if state['success']:   
+            if verify:
+                return self.get_state()['state'] == 'halted'
+        
+        return result
 
     def targets(self):
         return self.send('targets')
@@ -60,40 +70,45 @@ class OCDTarget(OCD):
     def flash_write_image_bin(self, firmware, address):
         result = self.send(f'flash write_image erase {firmware} {address}')
 
-        bytes_wrote_re = re.search('(wrote\s\d{3,}\sbytes)', result['message'])
+        if result['success']:
+            bytes_wrote_re = re.search('(wrote\s\d{3,}\sbytes)', result['message'])
 
-        if bytes_wrote_re:
-            result['bytes_wrote'] = bytes_wrote_re.group().split()[1]
-            result['success'] = True
-        else:
-            result['success'] = False
+            if bytes_wrote_re:
+                result['bytes_wrote'] = bytes_wrote_re.group().split()[1]
+                result['success'] = True
+            else:
+                result['success'] = False
 
         return result
 
     def verify_image(self, firmware, address):
         result = self.send(f'verify_image {firmware} {address}')
 
-        if 'verified' in result['message'].lower():
-            result['success'] = True
-        else:
-            result['success'] = False
+        if result['success']:
+            if 'verified' in result['message'].lower():
+                result['success'] = True
+            else:
+                result['success'] = False
 
         return result
 
     def program_bin(self, firmware, address, verify=True):
-        if not self.init():
-            return { 'success': False, 'message': 'Failed to init target' }
+        firmware = f'../firmware/{firmware}'
 
-        if not self.reset_halt():
-            return { 'success': False, 'message': 'Failed to reset halt target' }
+        func_dict = { 'init': 'self.init()',
+                      'reset halt': 'self.reset_halt()',
+                      'flash write_image erase': f'self.flash_write_image_bin("{firmware}", "{address}")',
+                      'verify_image': f'self.verify_image("{firmware}", "{address}")'
+                    }
 
-        program_result = self.flash_write_image_bin(firmware, address)
-        if not program_result['success']:
-            return { 'success': False, 'message': 'Failed writing to flash memory' }
+        for name, func in func_dict.items():
+            result = eval(func)
 
-        verify_result = self.verify_image(firmware, address)
-        if not verify_result['success']:
-            return { 'success': False, 'message': 'Failed to verify flash memory' }
-
-        return { 'success': True, 'message': 'Successfully programmed target' }
+            if not result['success']:
+                result['message'] = f'{result["message"]}: {name}'
+                yield result
+                
+                break
+            else:
+                yield result
         
