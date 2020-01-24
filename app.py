@@ -136,8 +136,8 @@ def start_programming(filename):
 
 def exit_handler():
     socketio.emit('SHUTDOWN')
-    sleep(0.3)
     print(f"{datetime.datetime.now()} app.py: *** TERMINATING APPLICATION ***")
+    socketio.sleep(0.3)
     exit()
 
 
