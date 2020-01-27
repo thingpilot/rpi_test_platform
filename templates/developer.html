@@ -86,16 +86,12 @@
         <p></p>
         <div class="row">
             <div class="col-sm-4">
-                <form method=post enctype=multipart/form-data id="testUploadForm">
-                    <b>Select test:</b>
-                    <input type="file" id="testUploadButton" accept=".py" name=file onchange=handleTestUpload(this.files)>
-                    <label class="btn btn-secondary" for="testUploadButton" id="testUploadLabel">Test</label>
-                </form>
+                <button class="btn btn-secondary" type="button" id="testButton" onclick=handleTest()>
+                    Run Test
+                </button>
             </div>  
             <div class="col-sm-2">
-                <button class="btn btn-secondary" type="button" id="testButton" disabled onclick=handleTest()>
-                    Test
-                </button>
+                
             </div>  
             <div class="col-sm-6">
                 <label id="testDateLabel">Modified: </label>
@@ -117,6 +113,7 @@
     var socket = io();
     var pgm_start_time;
     var fw_filename = null;
+    var module = null;
 
     socket.on('js_module_present', function() {
         $('#modulePicture').removeClass("grayed");
@@ -197,7 +194,7 @@
 
     $('.dropdown-item').click((event) => {
         var name = event.currentTarget;
-        var module = name.getAttribute("data-name");
+        module = name.getAttribute("data-name");
 
         if(module == "None")
         {
@@ -280,65 +277,8 @@
         socket.emit('get_unique_id')
     }
 
-    function handleTestUpload(file) {
-        var form_data = new FormData($('#testUploadForm')[0]);
-
-        var filename = file[0].name;
-        var extension = filename.split('.')[1].toLowerCase();
-        var date = file[0].lastModifiedDate.toString().slice(0, 33);
-
-        $.ajax({
-            data: form_data,
-            type: "POST",
-            url: "/test",
-            contentType: false, 
-            cache: false,
-            processData: false,
-            beforeSend: function() {
-                
-            },
-            success: function(data) {
-                $('#testUploadLabel').removeClass("btn btn-danger");
-                $('#testUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
-                $('#testUploadLabel').text(filename);
-                $('#testDateLabel').text("Modified: " + date);
-
-                $('#testButton').prop('disabled', false);
-                $('#testButton').removeClass("btn btn-success")
-                $('#testButton').removeClass("btn btn-secondary").addClass("btn btn-primary");
-
-                var upload_date = new Date().toLocaleString();
-
-                bootstrap_alert.success("Successfully uploaded " + filename + " at " + upload_date);
-            },
-            error: function(data) {
-                $('#testUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
-                $('#testUploadLabel').text("Invalid");
-                $('#testDateLabel').text("Modified: ");
-
-                $('#testButton').prop('disabled', true);
-                $('#testButton').removeClass("btn btn-success")
-                $('#testButton').removeClass("btn btn-primary").addClass("btn btn-secondary");
-
-                var upload_date = new Date().toLocaleString();
-
-                if(data.status == 400) {
-                    bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date);
-                }
-                else if(data.status == 415) {
-                    bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date);
-                }
-                else {
-                    bootstrap_alert.warning("Unknown error at " + upload_date);
-                }
-            }
-        });
-
-        $('#testUploadButton').val("");
-    }
-
     function handleTest() {
-
+        socket.emit('begin_test', module)
     }
 
     function isValidURL(string) {

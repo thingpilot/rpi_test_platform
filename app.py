@@ -19,18 +19,16 @@ from werkzeug.utils import secure_filename
 # Thingpilot library imports
 import app_utils
 from python_ocd.targets import stm32l0
+from module_tests import hardware_test
 
 # Global Flask and SocketIO objects
 ALLOWED_FW_EXTENSIONS = {'bin'}
-ALLOWED_TEST_EXTENSIONS = {'py'}
 FIRMWARE_FOLDER = '/python_ocd/firmware'
-TEST_FOLDER = '/module_tests'
 
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = f"{urandom(64)}"
 app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
-app.config['TEST_FOLDER'] = TEST_FOLDER
 socketio = SocketIO(app, async_mode='eventlet')
 
 
@@ -43,9 +41,6 @@ def allowed_file(filename, type):
     if type == 'FW':
         return '.' in filename and \
             filename.rsplit('.', 1)[1].lower() in ALLOWED_FW_EXTENSIONS
-    elif type == 'TEST':
-        return '.' in filename and \
-            filename.rsplit('.', 1)[1].lower() in ALLOWED_TEST_EXTENSIONS
 
 
 @app.route('/firmware', methods=['POST'])
@@ -62,25 +57,6 @@ def firmware_upload():
         if allowed_file(file.filename, 'FW'):
             filename = secure_filename(file.filename)
             file.save(f"{getcwd()}{path.join(app.config['FIRMWARE_FOLDER'], filename)}")
-            return Response(status=201)
-        else:
-            return Response(status=400)
-
-
-@app.route('/test', methods=['POST'])
-def test_upload():
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            return Response(status=415)
-
-        file = request.files['file']
-
-        if file.filename == '':
-            return Response(status=400)
-
-        if allowed_file(file.filename, 'TEST'):
-            filename = secure_filename(file.filename)
-            file.save(f"{getcwd()}{path.join(app.config['TEST_FOLDER'], filename)}")
             return Response(status=201)
         else:
             return Response(status=400)
@@ -147,6 +123,15 @@ def get_device_id():
                 socketio.emit('js_get_unique_id_fail', f'Message: {result["message"]} Error: {result["error"]}\n')
         else:
             socketio.emit('js_get_unique_id_fail', f'Failed to connect to Tcl server\n')
+
+
+@socketio.on('begin_test')
+def begin_test(module):
+    if module is None:
+        pass
+    
+    hw = hardware_test.HardwareTest(module.lower())
+    print(hw.pinmap)
 
 
 def exit_handler():
