@@ -35,7 +35,7 @@
                 <form method=post enctype=multipart/form-data id="firmwareUploadForm">
                     <b>Select firmware:</b>
                     <input type="file" id="firmwareUploadButton" accept=".bin" name=file onchange=handleFirmwareUpload(this.files)>
-                    <label class="btn btn-secondary" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
+                    <label class="btn btn-secondary dropdown-toggle" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
                 </form>
             </div>  
             <div class="col-sm-2">
@@ -50,7 +50,30 @@
         <p></p>
         <div class="row">
             <div class="col-sm-4">
-                <textarea class="form-control" id="provisionURL" rows="1" placeholder="Provision URL"></textarea>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="uniqueID" rows="1" placeholder="STM32 Unique ID"></input>
+                    <div class="input-group-append">
+                        <button class="btn btn-secondary", type="button"><i class="far fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-secondary" type="button" id="uniqueIDButton" onclick="handleUniqueID()">
+                    Get UID
+                </button>
+            </div>  
+            <div class="col-sm-6">
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="provisionURL" rows="1" placeholder="Provision URL"></input>
+                    <div class="input-group-append">
+                        <button class="btn btn-secondary", type="button"><i class="far fa-copy"></i></button>
+                    </div>
+                </div>
             </div>  
             <div class="col-sm-2">
                 <button class="btn btn-secondary" type="button" id="provisionButton" onclick="handleProvision()">
@@ -97,6 +120,7 @@
 
     socket.on('js_module_present', function() {
         $('#modulePicture').removeClass("grayed");
+        $('#uniqueIDButton').prop('disabled', false);
 
         if(fw_filename != null) {
             $('#programButton').prop('disabled', false);
@@ -105,6 +129,7 @@
 
     socket.on('js_module_not_present', function() {
         $('#programButton').prop('disabled', true);
+        $('#uniqueIDButton').prop('disabled', true);
 
         $('#modulePicture').addClass("grayed");
     });
@@ -153,6 +178,17 @@
         $('#programButton').removeClass("btn btn-success")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
         $('#modulePicture').removeClass("rotate")
+    })
+
+    socket.on('js_get_unique_id_success', function(data) {
+        $('#uniqueID').val(data)
+        $('#uniqueIDButton').removeClass("btn btn-danger")
+        $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-success")
+    })
+
+    socket.on('js_get_unique_id_fail', function(data) {
+        $('#uniqueIDButton').removeClass("btn btn-success")
+        $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
     })
 
     $(document).ready( () => {
@@ -238,6 +274,10 @@
 
     function handleProgram() {
         socket.emit('start_programming', $('#firmwareUploadLabel').text())
+    }
+
+    function handleUniqueID(){
+        socket.emit('get_unique_id')
     }
 
     function handleTestUpload(file) {
@@ -337,7 +377,6 @@
     var serverTime = new Date();
 
     function updateTime() {
-        /// Increment serverTime by 1 second and update the html for '#time'
         serverTime = new Date(serverTime.getTime() + 1000);
         $('#time').html(serverTime.toGMTString());
     }

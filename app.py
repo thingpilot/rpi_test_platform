@@ -135,6 +135,20 @@ def start_programming(filename):
             socketio.emit('js_programming_error', 'Failed to connect to Tcl server\n')
 
 
+@socketio.on('get_unique_id')
+def get_device_id():
+    with stm32l0.STM32L0() as cpu:
+        if cpu:
+            result = cpu.get_unique_id()
+
+            if result['success']:
+                socketio.emit('js_get_unique_id_success', result['message'])
+            else:
+                socketio.emit('js_get_unique_id_fail', f'Message: {result["message"]} Error: {result["error"]}\n')
+        else:
+            socketio.emit('js_get_unique_id_fail', f'Failed to connect to Tcl server\n')
+
+
 def exit_handler():
     socketio.emit('SHUTDOWN')
     print(f"{datetime.datetime.now()} app.py: *** TERMINATING APPLICATION ***")
