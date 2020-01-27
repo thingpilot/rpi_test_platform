@@ -18,3 +18,12 @@ class STM32L0(OCDTarget):
 
     def __init__(self, openocd_cfg='stm32l0_ocd.cfg', tcl_ip='localhost', tcl_port=6666):
         super().__init__(openocd_cfg, tcl_ip, tcl_port)
+
+    def get_unique_id(self):
+        result = self.send('mdw 0x1FF80050 3')
+
+        if result['success']:
+            result['message'] = result['message'][12:38]
+        
+        return result
+            
