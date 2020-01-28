@@ -27,3 +27,7 @@ class STM32L0(OCDTarget):
         
         return result
             
+
+if __name__ == '__main__':
+    with STM32L0() as cpu:
+        print(cpu.halt())

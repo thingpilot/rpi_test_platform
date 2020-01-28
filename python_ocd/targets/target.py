@@ -105,7 +105,9 @@ class OCDTarget(OCD):
         func_dict = { 'init': 'self.init()',
                       'reset halt': 'self.reset_halt()',
                       'flash write_image erase': f'self.flash_write_image_bin("{firmware}", "{address}")',
-                      'verify_image': f'self.verify_image("{firmware}", "{address}")'
+                      'verify_image': f'self.verify_image("{firmware}", "{address}")',
+                      'init': 'self.init()',
+                      'reset run': 'self.reset_run()'
                     }
 
         for name, func in func_dict.items():

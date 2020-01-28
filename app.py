@@ -128,10 +128,17 @@ def get_device_id():
 @socketio.on('begin_test')
 def begin_test(module):
     if module is None:
-        pass
-    
+        return Response(status=400)
+
+    with stm32l0.STM32L0() as cpu:
+        cpu.init()
+        cpu.reset_run()
+
     hw = hardware_test.HardwareTest(module.lower())
-    print(hw.pinmap)
+    
+    for result in hw.run_test():
+        socketio.emit('js_programming_progress', result['message'])
+        socketio.sleep(0.2)
 
 
 def exit_handler():
