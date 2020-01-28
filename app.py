@@ -137,8 +137,11 @@ def begin_test(module):
     hw = hardware_test.HardwareTest(module.lower())
     
     for result in hw.run_test():
-        socketio.emit('js_programming_progress', result['message'])
-        socketio.sleep(0.2)
+        if result['message'].lower() == 'see results':
+            socketio.emit('js_programming_progress', str(result['results']))
+        else:
+            socketio.emit('js_programming_progress', result['message'])
+            socketio.sleep(0.1)
 
 
 def exit_handler():
