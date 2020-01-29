@@ -137,8 +137,34 @@ def begin_test(module):
     hw = hardware_test.HardwareTest(module.lower())
     
     for result in hw.run_test():
-        if result['message'].lower() == 'see results':
-            socketio.emit('js_programming_progress', str(result['results']))
+        if result['message'].lower() == 'gpio':
+
+            test_pass = 'PASSED'
+            
+            for test_result in result['results']['results']:
+                pin = 'Pin {: <2} -'.format(test_result["pin"])
+
+                if test_result["high"]:
+                    high_icon = '<i class="fas fa-check-circle"></i>'
+                else:
+                    high_icon = '<i class="fas fa-times-circle"></i>'
+
+                if test_result["low"]:
+                    low_icon = '<i class="fas fa-check-circle"></i>'
+                else:
+                    low_icon = '<i class="fas fa-times-circle"></i>'
+
+                high = f'Assert: {high_icon}'
+                low = f'Deassert: {low_icon}'
+
+                row = [ pin, high, low ]
+
+                if test_result["high"] == False or test_result["low"] == False:
+                    test_pass = 'FAILED'
+
+                socketio.emit('js_programming_progress', '        {: <8} {: <14} {: <20}\n'.format(*row))
+
+            socketio.emit('js_programming_progress', f'    HW Test (GPIO) - {test_pass}. Took: {result["results"]["time_taken"]}ms\n')
         else:
             socketio.emit('js_programming_progress', result['message'])
             socketio.sleep(0.1)

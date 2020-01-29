@@ -31,3 +31,11 @@ img.grayed {
     filter: gray;
     -webkit-filter: grayscale(1);
 }
+
+.fa-check-circle {
+    color: #00b100;
+}
+
+.fa-times-circle {
+  color: #FF0000;
+}

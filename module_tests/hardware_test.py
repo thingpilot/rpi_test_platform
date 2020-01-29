@@ -10,6 +10,7 @@
 # Standard library imports
 import functools
 import time
+from datetime import datetime
 
 # 3rd-party library imports
 import RPi.GPIO as gpio
@@ -49,6 +50,8 @@ class HardwareTest():
 
         self.uart = None
         self.timeout_flag = False
+        self.test_passed = True
+        self.total_test_start_time = self._get_millis()
 
     def _reset_timeout_flag(func):
         @functools.wraps(func)
@@ -72,24 +75,28 @@ class HardwareTest():
     def _get_millis(self):
         return int(round(time.time() * 1000))
 
+    def start_test(self):
+        date_time = datetime.now().strftime("%a, %d %b %Y %H:%M:%S")
+        return { 'success': True, 'message': f'*** Beginning {self.module.title()} hardware test at: {date_time} ***\n' }
+
     def verify_pinmap(self):
         if self.pinmap is None:
-            return { 'success': False, 'message': 'Unknown module selected\n'}
+            return { 'success': False, 'message': '    HW Test (init) - Unknown module selected\n'}
 
-        return { 'success': True, 'message': f'Successfully loaded pin mapping for {self.module}\n'}
+        return { 'success': True, 'message': f'    HW Test (init) - Successfully loaded pin mapping for {self.module.title()}\n'}
 
     @_reset_timeout_flag
     def initialise_device(self):
         try:
             self.uart = serial.Serial('/dev/serial0', 9600, timeout=0.2)
         except serial.serialutil.SerialException:
-            return { 'success': False, 'message': 'Failed to connect to port /dev/serial0\n'}
+            return { 'success': False, 'message': '    HW Test (init) - Failed to connect to port /dev/serial0\n'}
 
         if not self.uart.is_open:
             self.uart.open()
 
         if not self.uart.is_open:
-            return { 'success': False, 'message': 'Failed to open port /dev/serial0\n'}
+            return { 'success': False, 'message': '    HW Test (init) - Failed to open port /dev/serial0\n'}
 
         start_time = self._get_millis()
 
@@ -106,9 +113,12 @@ class HardwareTest():
                 break
         
         if self.timeout_flag:
-            return { 'success': False, 'message': 'Failed to place DUT into test mode\n'}
+            return { 'success': False, 'message': '    HW Test (init) - Failed to place DUT into test mode\n'}
                     
-        return { 'success': True, 'message': 'DUT successfully placed into test mode\n'}
+        return { 'success': True, 'message': '    HW Test (init) - DUT successfully placed into test mode\n'}
+
+    def start_test_gpio(self):
+        return { 'success': True, 'message': '    HW Test (GPIO) - Starting GPIO test\n'}
 
     @_flush_uart_input_buffer
     @_reset_timeout_flag
@@ -174,7 +184,7 @@ class HardwareTest():
         time_taken = self._get_millis() - test_start_time
         test_results['time_taken'] = time_taken
 
-        return { 'success': test_passed, 'message': 'See results', 'results': test_results }
+        return { 'success': test_passed, 'message': 'GPIO', 'results': test_results }
 
     @_flush_uart_input_buffer
     @_reset_timeout_flag
@@ -197,13 +207,23 @@ class HardwareTest():
         if self.uart.is_open:
             self.uart.close()
 
-        return { 'success': True, 'message': f'Test complete\n' }
+        if self.test_passed:
+            result_string = 'PASSED'
+        else:
+            result_string = 'FAILED'
+
+        total_test_time_taken = self._get_millis() - self.total_test_start_time
+
+        return { 'success': True, 'message': f'*** Ended {self.module.title()} hardware test. Took: {total_test_time_taken}ms ***\n    HW Test - {result_string}\n' }
 
     def run_test(self):
-        steps = { 'verify_pinmap': 'self.verify_pinmap()',
-                  'initialise_device': 'self.initialise_device()',
-                  'test_gpio': 'self.test_gpio()',
-                  'end_test': 'self.end_test()'
+        steps = { 
+            'start_test': 'self.start_test()',
+            'verify_pinmap': 'self.verify_pinmap()',
+            'initialise_device': 'self.initialise_device()',
+            'start_test_gpio': 'self.start_test_gpio()',
+            'test_gpio': 'self.test_gpio()',
+            'end_test': 'self.end_test()'
         }
 
         for step, func in steps.items():
@@ -212,6 +232,6 @@ class HardwareTest():
             yield result
 
             if not result['success']:
-                print(result)
+                self.test_passed = False
                 yield self.end_test()
                 break
