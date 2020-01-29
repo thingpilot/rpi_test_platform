@@ -93,7 +93,13 @@ def start_programming(filename):
             for result in cpu.program_bin(filename, stm32l0.STM32L0.PGM_START_ADDRESS):
                 if result['success']:
                     if result['message'] != '':
-                        output_list.append(result['message'])
+                        if 'enabled\nwrote' in result['message']:
+                            messages = result['message'].split('\n')
+                            
+                            for i in messages[0:2]:
+                                output_list.append(f'    {i}\n')
+                        else: 
+                            output_list.append(f'    {result["message"]}')
                 else:
                     output_list.append(f'Message: {result["message"]} Error: {result["error"]}\n')
                     error = True
@@ -131,8 +137,9 @@ def begin_test(module):
         return Response(status=400)
 
     with stm32l0.STM32L0() as cpu:
-        cpu.init()
-        cpu.reset_run()
+        if cpu:
+            cpu.init()
+            cpu.reset_run()
 
     hw = hardware_test.HardwareTest(module.lower())
     

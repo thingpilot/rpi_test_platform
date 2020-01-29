@@ -85,14 +85,25 @@
         </div>
         <p></p>
         <div class="row">
-            <div class="col-sm-4">
-                <button class="btn btn-primary" type="button" id="testButton" onclick=handleTest()>
-                    Run Test
-                </button>
+            <div class="col-sm-6">
+                <div class="row">
+                    <button class="btn btn-primary" type="button" id="testButton" onclick=handleTest()>
+                        Run Test
+                    </button>
+                    &nbsp;
+                    <button class="btn btn-danger" id="testAfterProgram" onclick=toggleTestAfterProgram() value=false>
+                        Test after Program
+                    </button>
+                    &nbsp;
+                    <button class="btn btn-danger" id="provisionAfterTest" onclick=toggleProvisionAfterTest() value=false>
+                        Provision after Test
+                    </button>
+                    </div>
+                </div>      
             </div>  
             <div class="col-sm-2">
             </div>  
-            <div class="col-sm-6">
+            <div class="col-sm-4">
             </div>
         </div>
     </div>
@@ -112,6 +123,8 @@
     var pgm_start_time;
     var fw_filename = null;
     var module = null;
+    var testAfterProgram = false;
+    var provisionAfterTest = false;
 
     socket.on('js_module_present', function() {
         $('#modulePicture').removeClass("grayed");
@@ -146,9 +159,11 @@
         bootstrap_alert.primary("Programming started...")
         $('#programButton').removeClass("btn btn-danger")
         $('#programButton').removeClass("btn btn-success").addClass("btn btn-primary")
+        $('#testButton').removeClass("btn btn-danger")
+        $('#testButton').removeClass("btn btn-success").addClass("btn btn-primary")
         $('#modulePicture').addClass("rotate")
-        $('#terminal').text("Programming started\n" + $('#terminal').text())
-        $('#terminal').text("\n" + $('#terminal').text())
+        $('#terminal').html("*** Programming " + fw_filename + " started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+        $('#terminal').html("\n" + $('#terminal').html())
         programProgressIndicatorInterval()
         pgm_start_time = new Date().getTime();
     })
@@ -170,17 +185,21 @@
         var pgm_end_time = new Date().getTime();
         bootstrap_alert.success("Programming successful. Took: " + (pgm_end_time - pgm_start_time) + "ms")
         clearInterval(programProgressIndicatorIntervalId)
-        $('#terminal').text("Programming success! Took: " + (pgm_end_time - pgm_start_time) + "ms\n" + $('#terminal').text())
+        $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
         $('#programButton').removeClass("btn btn-danger")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-success")
         $('#modulePicture').removeClass("rotate")
+
+        if(testAfterProgram) {
+            handleTest()
+        }
     })
 
     socket.on('js_programming_error', function(data) {
         var pgm_end_time = new Date().getTime();
         bootstrap_alert.warning("Programming failed. Took: " + (pgm_end_time - pgm_start_time) + "ms. " + data)
         clearInterval(programProgressIndicatorIntervalId)
-        $('#terminal').text("Programming failed. Took: " + (pgm_end_time - pgm_start_time) + "ms\n" + $('#terminal').text())
+        $('#terminal').html("*** Programming failed <i class='fas fa-times-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
         $('#programButton').removeClass("btn btn-success")
         $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
         $('#modulePicture').removeClass("rotate")
@@ -200,6 +219,36 @@
     $(document).ready( () => {
         socket.emit('is_module_present');
     })
+
+    function toggleTestAfterProgram() {
+        current_value = $('#testAfterProgram').val()
+
+        if(current_value == 'true') {
+            testAfterProgram = false;
+            $('#testAfterProgram').val('false')
+            $('#testAfterProgram').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else {
+            testAfterProgram = true;
+            $('#testAfterProgram').val('true')
+            $('#testAfterProgram').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+    }
+
+    function toggleProvisionAfterTest() {
+        current_value = $('#provisionAfterTest').val()
+
+        if(current_value == 'true') {
+            testAfterProgram = false;
+            $('#provisionAfterTest').val('false')
+            $('#provisionAfterTest').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else {
+            testAfterProgram = true;
+            $('#provisionAfterTest').val('true')
+            $('#provisionAfterTest').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+    }
 
     function copyToClipboard(element) {
         var $temp = $("<input>");
