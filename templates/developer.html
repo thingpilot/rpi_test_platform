@@ -86,15 +86,13 @@
         <p></p>
         <div class="row">
             <div class="col-sm-4">
-                <button class="btn btn-secondary" type="button" id="testButton" onclick=handleTest()>
+                <button class="btn btn-primary" type="button" id="testButton" onclick=handleTest()>
                     Run Test
                 </button>
             </div>  
             <div class="col-sm-2">
-                
             </div>  
             <div class="col-sm-6">
-                <label id="testDateLabel">Modified: </label>
             </div>
         </div>
     </div>
@@ -118,6 +116,7 @@
     socket.on('js_module_present', function() {
         $('#modulePicture').removeClass("grayed");
         $('#uniqueIDButton').prop('disabled', false);
+        $('#testButton').prop('disabled', false);
 
         if(fw_filename != null) {
             $('#programButton').prop('disabled', false);
@@ -127,6 +126,7 @@
     socket.on('js_module_not_present', function() {
         $('#programButton').prop('disabled', true);
         $('#uniqueIDButton').prop('disabled', true);
+        $('#testButton').prop('disabled', true);
 
         $('#modulePicture').addClass("grayed");
     });
@@ -154,6 +154,15 @@
     })
 
     socket.on('js_programming_progress', function(data) {
+        if(data.toLowerCase().includes("failed")) {
+            $('#testButton').removeClass("btn btn-primary")
+            $('#testButton').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else if(data.toLowerCase().includes("passed")) {
+            $('#testButton').removeClass("btn btn-primary")
+            $('#testButton').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+
         $('#terminal').html(data + $('#terminal').html())
     })
 
