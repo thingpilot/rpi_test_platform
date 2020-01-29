@@ -71,7 +71,7 @@
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" id="provisionURL" rows="1" placeholder="Provision URL"></input>
                     <div class="input-group-append">
-                        <button class="btn btn-secondary", type="button" onclick="copyToClipboard('#provisionURL')"><i class="far fa-copy"></i></button>
+                        <button id="provisionCopyButton" class="btn btn-secondary", type="button" onclick="copyToClipboard('#provisionURL')"><i class="far fa-copy"></i></button>
                     </div>
                 </div>
             </div>  
@@ -207,6 +207,8 @@
         $temp.val($(element).val()).select();
         document.execCommand("copy");
         $temp.remove();
+
+        bootstrap_alert.success("Copied: " + $(element).val())
     }
 
     $('.dropdown-item').click((event) => {
