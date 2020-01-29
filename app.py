@@ -139,7 +139,7 @@ def begin_test(module):
     for result in hw.run_test():
         if result['message'].lower() == 'gpio':
 
-            test_pass = 'PASSED'
+            test_pass = 'PASSED <i class="fas fa-check-circle"></i>'
             
             for test_result in result['results']['results']:
                 pin = 'Pin {: <2} -'.format(test_result["pin"])
@@ -160,7 +160,7 @@ def begin_test(module):
                 row = [ pin, high, low ]
 
                 if test_result["high"] == False or test_result["low"] == False:
-                    test_pass = 'FAILED'
+                    test_pass = 'FAILED <i class="fas fa-times-circle"></i>'
 
                 socketio.emit('js_programming_progress', '        {: <8} {: <14} {: <20}\n'.format(*row))
 

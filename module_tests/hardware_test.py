@@ -216,9 +216,9 @@ class HardwareTest():
             self.uart.close()
 
         if self.test_passed:
-            result_string = 'PASSED'
+            result_string = 'PASSED <i class="fas fa-check-circle"></i>'
         else:
-            result_string = 'FAILED'
+            result_string = 'FAILED <i class="fas fa-times-circle"></i>'
 
         total_test_time_taken = self._get_millis() - self.total_test_start_time
 
