@@ -102,10 +102,11 @@ class HardwareTest():
 
         while True:
             s = str(self.uart.readline())
-            print(s)
+            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
 
             if TestCommands.TEST_INIT in s:
                 self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
+                print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
                 break
 
             if self._get_millis() > (start_time + 1000):
@@ -142,16 +143,19 @@ class HardwareTest():
             gpio.setup(rpi_pin_no, gpio.IN)
 
             self.uart.write(bytes(f'{TestCommands.TEST_GPIO}{cpu_pin_no},1', 'utf-8'))
+            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_GPIO}{cpu_pin_no},1")
             start_time = self._get_millis()
 
             while True: 
                 result = str(self.uart.readline())
+                print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {result}")
 
                 if f'GPIO: {cpu_pin_no}, 1' in result:
                     pin_state = gpio.input(rpi_pin_no)
 
                     if pin_state == 1:
                         self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
+                        print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
                         HIGH_RESULT = True
                         break
                 
@@ -160,16 +164,20 @@ class HardwareTest():
                     break
 
             self.uart.write(bytes(f'{TestCommands.TEST_GPIO}{cpu_pin_no},0', 'utf-8'))
+            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_GPIO}{cpu_pin_no},0")
+            
             start_time = self._get_millis()
 
             while True: 
                 s = str(self.uart.readline())
+                print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
 
                 if f'GPIO: {cpu_pin_no}, 0' in s:
                     pin_state = gpio.input(rpi_pin_no)
                     
                     if pin_state == 0:
                         self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
+                        print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
                         LOW_RESULT = True
                         break
                 
@@ -193,12 +201,12 @@ class HardwareTest():
 
         while True:
             self.uart.write(bytes(TestCommands.TEST_END, 'utf-8'))
+            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_END}")
 
             s = str(self.uart.readline())
-            print(s)
+            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
 
             if 'TEST COMPLETE' in s:
-                print(f"Received: {s}")
                 break
 
             if self._get_millis() > (start_time + 1000):
@@ -227,7 +235,8 @@ class HardwareTest():
         }
 
         for step, func in steps.items():
-            print(step)
+            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) {step}")
+
             result = eval(func)
             yield result
 
