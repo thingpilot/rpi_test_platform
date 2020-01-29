@@ -121,6 +121,36 @@ class HardwareTest():
     def start_test_gpio(self):
         return { 'success': True, 'message': '    HW Test (GPIO) - Starting GPIO test\n'}
 
+    def _toggle_test_gpio(self, cpu_pin, rpi_pin, expected_pin_state):
+        gpio.setmode(gpio.BCM)
+        gpio.setup(rpi_pin, gpio.IN)
+        test_passed = False
+
+        self.uart.write(bytes(f'{TestCommands.TEST_GPIO}{cpu_pin},{expected_pin_state}', 'utf-8'))
+        print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_GPIO}{cpu_pin},{expected_pin_state}")
+        start_time = self._get_millis()
+
+        while True: 
+            result = str(self.uart.readline())
+            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {result}")
+
+            if f'GPIO: {cpu_pin}, {expected_pin_state}' in result:
+                actual_pin_state = gpio.input(rpi_pin)
+
+                if actual_pin_state == expected_pin_state:
+                    self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
+                    print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
+                    test_passed = True
+                    break
+            
+            if self._get_millis() > (start_time + 1000):
+                test_passed = False
+                break
+
+        gpio.cleanup()
+
+        return test_passed
+
     @_flush_uart_input_buffer
     @_reset_timeout_flag
     def test_gpio(self):
@@ -128,66 +158,20 @@ class HardwareTest():
         test_results = { 'time_taken': 0, 'type': 'GPIO', 'results': [] }
         test_passed = True
 
-        gpio.setmode(gpio.BCM)
-
         for pin, mapping in self.pinmap.items():
             if mapping['bus'] == 'SWD' or mapping['bus'] == 'PWR' or mapping['bus'] == 'RSVD' or mapping['bus'] == 'UART':
                 continue
 
-            HIGH_RESULT = False
-            LOW_RESULT = False
+            rpi_pin = mapping['rpi_pin_no']
+            cpu_pin = mapping['cpu_pin_no']
 
-            rpi_pin_no = mapping['rpi_pin_no']
-            cpu_pin_no = mapping['cpu_pin_no']
+            HIGH_RESULT = self._toggle_test_gpio(cpu_pin, rpi_pin, 1)
+            LOW_RESULT = self._toggle_test_gpio(cpu_pin, rpi_pin, 0)  
 
-            gpio.setup(rpi_pin_no, gpio.IN)
+            if not HIGH_RESULT or not LOW_RESULT: 
+                test_passed = False   
 
-            self.uart.write(bytes(f'{TestCommands.TEST_GPIO}{cpu_pin_no},1', 'utf-8'))
-            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_GPIO}{cpu_pin_no},1")
-            start_time = self._get_millis()
-
-            while True: 
-                result = str(self.uart.readline())
-                print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {result}")
-
-                if f'GPIO: {cpu_pin_no}, 1' in result:
-                    pin_state = gpio.input(rpi_pin_no)
-
-                    if pin_state == 1:
-                        self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
-                        print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
-                        HIGH_RESULT = True
-                        break
-                
-                if self._get_millis() > (start_time + 1000):
-                    test_passed = False
-                    break
-
-            self.uart.write(bytes(f'{TestCommands.TEST_GPIO}{cpu_pin_no},0', 'utf-8'))
-            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_GPIO}{cpu_pin_no},0")
-            
-            start_time = self._get_millis()
-
-            while True: 
-                s = str(self.uart.readline())
-                print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
-
-                if f'GPIO: {cpu_pin_no}, 0' in s:
-                    pin_state = gpio.input(rpi_pin_no)
-                    
-                    if pin_state == 0:
-                        self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
-                        print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
-                        LOW_RESULT = True
-                        break
-                
-                if self._get_millis() > (start_time + 1000):
-                    test_passed = False
-                    break
-
-            test_results['results'].append({ 'pin': pin, 'high': HIGH_RESULT, 'low': LOW_RESULT })
-
-        gpio.cleanup()
+            test_results['results'].append({ 'pin': pin, 'high': HIGH_RESULT, 'low': LOW_RESULT })  
 
         time_taken = self._get_millis() - test_start_time
         test_results['time_taken'] = time_taken
