@@ -134,7 +134,8 @@ def get_device_id():
 
 @socketio.on('start_provision')
 def start_provision(module, url, uid):
-    print(url, uid)
+    if module is None or url is None or uid is None:
+        return Response(status=400)
 
     with stm32l0.STM32L0() as cpu:
         if cpu:
@@ -149,7 +150,7 @@ def start_provision(module, url, uid):
     prov_bool = False
 
     for result in prov.provision():
-        print(result)
+        socketio.emit('js_programming_progress', result['message'])
 
 
 @socketio.on('begin_test')
