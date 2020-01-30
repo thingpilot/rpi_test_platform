@@ -157,7 +157,7 @@
     });
 
     function programProgressIndicator() {
-        $('#terminal').text("." + $('#terminal').text())
+        $('#terminal').html("." + $('#terminal').html())
     }
 
     var programProgressIndicatorIntervalId;
@@ -243,6 +243,10 @@
     socket.on('js_test_complete', (data) => {
         if(data) {
             bootstrap_alert.success("Test passed!")
+
+            if(provisionAfterTest == true) {
+                handleProvision()
+            }
         }
         else {
             bootstrap_alert.warning("Test failed.")
@@ -272,12 +276,12 @@
         current_value = $('#provisionAfterTest').val()
 
         if(current_value == 'true') {
-            testAfterProgram = false;
+            provisionAfterTest = false;
             $('#provisionAfterTest').val('false')
             $('#provisionAfterTest').removeClass("btn btn-success").addClass("btn btn-danger")
         }
         else {
-            testAfterProgram = true;
+            provisionAfterTest = true;
             $('#provisionAfterTest').val('true')
             $('#provisionAfterTest').removeClass("btn btn-danger").addClass("btn btn-success")
         }
