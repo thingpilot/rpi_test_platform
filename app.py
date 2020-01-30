@@ -135,6 +135,14 @@ def get_device_id():
 def start_provision(url, uid):
     print(url, uid)
 
+    with stm32l0.STM32L0() as cpu:
+        if cpu:
+            cpu.init()
+            cpu.reset_run()
+        else:
+            socketio.emit('js_fail_init_cpu_provision')
+            return Response(status=500)
+
 
 @socketio.on('begin_test')
 def begin_test(module):

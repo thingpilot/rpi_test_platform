@@ -253,6 +253,13 @@
         }
     })
 
+    socket.on('js_fail_init_cpu_provision', (data) => {
+        $('#provisionButton').removeClass("btn btn-secondary")
+        $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger")
+
+        bootstrap_alert.warning("Provisioning failed. Failed to initialise CPU")
+    })
+
     $(document).ready( () => {
         socket.emit('is_module_present');
     })
