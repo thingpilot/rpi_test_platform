@@ -125,8 +125,11 @@
     var testAfterProgram = false;
     var provisionAfterTest = false;
     var uniqueID = null;
+    var connected = false;
 
     socket.on('js_module_present', function() {
+        connected = true;
+
         $('#modulePicture').removeClass("grayed");
         $('#uniqueIDButton').prop('disabled', false);
 
@@ -142,6 +145,8 @@
     });
 
     socket.on('js_module_not_present', function() {
+        connected = false;
+
         $('#programButton').prop('disabled', true);
         $('#uniqueIDButton').prop('disabled', true);
         $('#testButton').prop('disabled', true);
@@ -301,13 +306,14 @@
         }
         else 
         {
+            if(connected == true) {
+                $('#testButton').prop('disabled', false);
+            }    
+            
             $('#moduleSelectButton').text(name.getAttribute("data-name"));
             $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle");
-
-            
+    
             $('#modulePicture').attr("src", "../static/images/" + module + ".png")
-
-            $('#testButton').prop('disabled', false);
         }
     });
 
