@@ -101,7 +101,7 @@ def start_programming(filename):
                         else: 
                             output_list.append(f'    {result["message"]}')
                 else:
-                    output_list.append(f'Message: {result["message"]} Error: {result["error"]}\n')
+                    output_list.append(f'    Message: {result["message"]} Error: {result["error"]}\n')
                     error = True
                     break
 
@@ -131,6 +131,11 @@ def get_device_id():
             socketio.emit('js_get_unique_id_fail', f'Failed to connect to Tcl server\n')
 
 
+@socketio.on('start_provision')
+def start_provision(url, uid):
+    print(url, uid)
+
+
 @socketio.on('begin_test')
 def begin_test(module):
     if module is None:
@@ -140,10 +145,17 @@ def begin_test(module):
         if cpu:
             cpu.init()
             cpu.reset_run()
+        else:
+            socketio.emit('js_fail_init_cpu_test')
+            return Response(status=500)
 
     hw = hardware_test.HardwareTest(module.lower())
+    test_bool = True
     
     for result in hw.run_test():
+        if not result['success']:
+            test_bool = False
+
         if result['message'].lower() == 'gpio':
 
             test_pass = 'PASSED <i class="fas fa-check-circle"></i>'
@@ -175,15 +187,19 @@ def begin_test(module):
         else:
             socketio.emit('js_programming_progress', result['message'])
             socketio.sleep(0.1)
+        
+    socketio.emit('js_test_complete', test_bool)
 
 
 def exit_handler():
     socketio.emit('SHUTDOWN')
     print(f"{datetime.datetime.now()} app.py: *** TERMINATING APPLICATION ***")
-    socketio.sleep(0.3)
     exit()
 
 
 if __name__ == '__main__':
     atexit.register(exit_handler)
-    socketio.run(app, host=app_utils.get_ip_address(), port=80, debug=True)
+    try:
+        socketio.run(app, host=app_utils.get_ip_address(), port=80, debug=True)
+    except KeyboardInterrupt:
+        sys.exit()

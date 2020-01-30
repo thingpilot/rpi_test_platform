@@ -87,7 +87,7 @@
         <div class="row">
             <div class="col-sm-6">
                 <div class="row">
-                    <button class="btn btn-primary" type="button" id="testButton" onclick=handleTest()>
+                    <button class="btn btn-primary" type="button" id="testButton" disabled onclick=handleTest()>
                         Run Test
                     </button>
                     &nbsp;
@@ -107,7 +107,6 @@
             </div>
         </div>
     </div>
-    <p></p>
     <div class="card">
         <div class="card-body">
             <pre class="pre-scrollable"> 
@@ -125,14 +124,20 @@
     var module = null;
     var testAfterProgram = false;
     var provisionAfterTest = false;
+    var uniqueID = null;
 
     socket.on('js_module_present', function() {
         $('#modulePicture').removeClass("grayed");
         $('#uniqueIDButton').prop('disabled', false);
-        $('#testButton').prop('disabled', false);
+
+        $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
 
         if(fw_filename != null) {
             $('#programButton').prop('disabled', false);
+        }
+
+        if(module != null) {
+            $('#testButton').prop('disabled', false);
         }
     });
 
@@ -140,6 +145,8 @@
         $('#programButton').prop('disabled', true);
         $('#uniqueIDButton').prop('disabled', true);
         $('#testButton').prop('disabled', true);
+
+        $('#terminal').html("*** Module disconnected at: " + $('#time').html() + " <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
 
         $('#modulePicture').addClass("grayed");
     });
@@ -207,13 +214,34 @@
 
     socket.on('js_get_unique_id_success', function(data) {
         $('#uniqueID').val(data)
+        uniqueID = data
         $('#uniqueIDButton').removeClass("btn btn-danger")
         $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-success")
+
+        $('#terminal').html("*** Get UID success <i class='fas fa-check-circle'></i> UID: " + uniqueID + " ***\n" + $('#terminal').html())
     })
 
     socket.on('js_get_unique_id_fail', function(data) {
         $('#uniqueIDButton').removeClass("btn btn-success")
         $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
+
+        $('#terminal').html("*** Get UID failed <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
+    })
+
+    socket.on('js_fail_init_cpu_test', (data) => {
+        $('#testButton').removeClass("btn btn-primary")
+        $('#testButton').removeClass("btn btn-success").addClass("btn btn-danger")
+
+        bootstrap_alert.warning("Test failed. Failed to initialise CPU")
+    })
+
+    socket.on('js_test_complete', (data) => {
+        if(data) {
+            bootstrap_alert.success("Test passed!")
+        }
+        else {
+            bootstrap_alert.warning("Test failed.")
+        }
     })
 
     $(document).ready( () => {
@@ -268,6 +296,8 @@
         {
             $('#moduleSelectButton').text("Module");
             $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-primary dropdown-toggle");
+
+            $('#testButton').prop('disabled', true);
         }
         else 
         {
@@ -276,6 +306,8 @@
 
             
             $('#modulePicture').attr("src", "../static/images/" + module + ".png")
+
+            $('#testButton').prop('disabled', false);
         }
     });
 
@@ -346,6 +378,9 @@
     }
 
     function handleTest() {
+        $('#testButton').removeClass("btn btn-danger")
+        $('#testButton').removeClass("btn btn-success").addClass("btn btn-primary")
+        bootstrap_alert.primary("Test started...")
         socket.emit('begin_test', module)
     }
 
@@ -360,11 +395,21 @@
         if(isValidURL(candidate_url)) {
             $('#provisionButton').removeClass("btn btn-danger")
             $('#provisionButton').removeClass("btn btn-secondary").addClass("btn btn-success");
+
+            if(uniqueID != null) {
+                bootstrap_alert.primary("Provision started...")
+                socket.emit('start_provision', candidate_url, uniqueID)
+            }
+            else {
+                $('#provisionButton').removeClass("btn btn-secondary")
+                $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger");
+                bootstrap_alert.warning("Unique ID required to provision")
+            }
         }
         else {
             $('#provisionButton').removeClass("btn btn-secondary")
             $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger");
-            return;
+            bootstrap_alert.warning("Invalid provisioning URL")
         }
     };
 
