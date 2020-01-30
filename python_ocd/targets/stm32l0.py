@@ -23,16 +23,9 @@ class STM32L0(OCDTarget):
         result = self.send('mdw 0x1FF80050 3')
 
         if result['success']:
-            print(result)
-
             if '00000000 00000000 00000000' in result['message'] or result['message'] == '':
                 result['success'] = False
 
             result['message'] = result['message'][12:38]
         
         return result
-            
-
-if __name__ == '__main__':
-    with STM32L0() as cpu:
-        print(cpu.halt())
