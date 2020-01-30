@@ -142,7 +142,7 @@ class ThingpilotProvisioner():
             s = str(self.uart.readline())
             print(f"{datetime.now()} provision.py: ({self.module.title()}) received: {s}")
 
-            if 'PROV COMPLETE' in s:
+            if ThingpilotProvisioner.ACK in s:
                 break
 
             if self._get_millis() > (start_time + 1000):

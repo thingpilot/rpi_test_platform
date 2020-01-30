@@ -192,7 +192,7 @@ class HardwareTest():
             s = str(self.uart.readline())
             print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
 
-            if 'TEST COMPLETE' in s:
+            if TestCommands.ACK in s:
                 break
 
             if self._get_millis() > (start_time + 1000):
