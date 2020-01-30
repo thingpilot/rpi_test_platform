@@ -28,8 +28,9 @@ class TimeoutError(Exception):
 
 
 class TestCommands():
-    TEST_INIT = 'AT+MODTEST'
-    TEST_END  = 'AT+ENDTEST'
+    CTRL = 'AT+CTRL'
+    TEST_INIT = 'TEST'
+    TEST_END  = 'AT+END'
     ACK       = 'OK'
     TEST_GPIO = 'AT+GPIO='
 
@@ -104,7 +105,8 @@ class HardwareTest():
             s = str(self.uart.readline())
             print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
 
-            if TestCommands.TEST_INIT in s:
+            if TestCommands.CTRL in s:
+                self.uart.write(bytes(TestCommands.TEST_INIT, 'utf-8'))
                 self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
                 print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
                 break

@@ -27,12 +27,14 @@ class ThingpilotProvisioner():
     EARHART = 'earhart'
     WRIGHT = 'wright'
 
+    CTRL = 'AT+CTRL'
     ACK = 'OK'
-    PROV_INIT = 'AT+MODPROV'
-    PROV_END = 'AT+ENDPROV'
+    PROV_INIT = 'PROV'
+    PROV_END = 'AT+END'
 
-    def __init__(self, module, uid):
+    def __init__(self, module, url, uid):
         self.module = module
+        self.url = url
         self.uid = uid
 
         self.uart = None
@@ -85,8 +87,10 @@ class ThingpilotProvisioner():
             s = str(self.uart.readline())
             print(f"{datetime.now()} provision.py: ({self.module.title()}) received: {s}")
 
-            if ThingpilotProvisioner.PROV_INIT in s:
+            if ThingpilotProvisioner.CTRL in s:
+                self.uart.write(bytes(ThingpilotProvisioner.PROV_INIT, 'utf-8'))
                 self.uart.write(bytes(ThingpilotProvisioner.ACK, 'utf-8'))
+                print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.PROV_INIT}")
                 print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.ACK}")
                 break
 
@@ -102,7 +106,29 @@ class ThingpilotProvisioner():
     @_flush_uart_input_buffer
     @_reset_timeout_flag
     def provision_device(self):
-        pass
+        start_time = self._get_millis()
+
+        """
+        while True:
+            s = str(self.uart.readline())
+            print(f"{datetime.now()} provision.py: ({self.module.title()}) received: {s}")
+
+            if ThingpilotProvisioner.CTRL in s:
+                self.uart.write(bytes(ThingpilotProvisioner.PROV_INIT, 'utf-8'))
+                self.uart.write(bytes(ThingpilotProvisioner.ACK, 'utf-8'))
+                print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.PROV_INIT}")
+                print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.ACK}")
+                break
+
+            if self._get_millis() > (start_time + 1000):
+                self.timeout_flag = True
+                break
+        
+        """
+        if self.timeout_flag:
+            return { 'success': False, 'message': '    Provision (init) - Failed to place module into provisioning mode\n'}
+                    
+        return { 'success': True, 'message': '    Provision (init) - Module successfully placed into provisioning mode\n'}
 
     @_flush_uart_input_buffer
     @_reset_timeout_flag
@@ -121,7 +147,7 @@ class ThingpilotProvisioner():
 
             if self._get_millis() > (start_time + 1000):
                 break
-
+        
         if self.uart.is_open:
             self.uart.close()
 
@@ -150,5 +176,5 @@ class ThingpilotProvisioner():
 
             if not result['success']:
                 self.test_passed = False
-                yield self.end_test()
+                yield self.end_provision()
                 break

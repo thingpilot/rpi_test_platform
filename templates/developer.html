@@ -415,7 +415,7 @@
 
             if(uniqueID != null) {
                 bootstrap_alert.primary("Provision started...")
-                socket.emit('start_provision', candidate_url, uniqueID)
+                socket.emit('start_provision', module, candidate_url, uniqueID)
             }
             else {
                 $('#provisionButton').removeClass("btn btn-secondary")

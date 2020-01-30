@@ -20,6 +20,7 @@ from werkzeug.utils import secure_filename
 import app_utils
 from python_ocd.targets import stm32l0
 from module_tests import hardware_test
+from module_provision import provision
 
 # Global Flask and SocketIO objects
 ALLOWED_FW_EXTENSIONS = {'bin'}
@@ -132,7 +133,7 @@ def get_device_id():
 
 
 @socketio.on('start_provision')
-def start_provision(url, uid):
+def start_provision(module, url, uid):
     print(url, uid)
 
     with stm32l0.STM32L0() as cpu:
@@ -142,6 +143,13 @@ def start_provision(url, uid):
         else:
             socketio.emit('js_fail_init_cpu_provision')
             return Response(status=500)
+
+    prov = provision.ThingpilotProvisioner(module.lower(), url, uid)
+
+    prov_bool = False
+
+    for result in prov.provision():
+        print(result)
 
 
 @socketio.on('begin_test')
