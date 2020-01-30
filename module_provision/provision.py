@@ -28,7 +28,8 @@ class ThingpilotProvisioner():
     WRIGHT = 'wright'
 
     ACK = 'OK'
-    PROVISION_INIT = 'AT+PROVINIT'
+    PROV_INIT = 'AT+MODPROV'
+    PROV_END = 'AT+ENDPROV'
 
     def __init__(self, module, uid):
         self.module = module
@@ -84,9 +85,9 @@ class ThingpilotProvisioner():
             s = str(self.uart.readline())
             print(f"{datetime.now()} provision.py: ({self.module.title()}) received: {s}")
 
-            if TestCommands.TEST_INIT in s:
-                self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
-                print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {TestCommands.ACK}")
+            if ThingpilotProvisioner.PROV_INIT in s:
+                self.uart.write(bytes(ThingpilotProvisioner.ACK, 'utf-8'))
+                print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.ACK}")
                 break
 
             if self._get_millis() > (start_time + 1000):
@@ -109,8 +110,8 @@ class ThingpilotProvisioner():
         start_time = self._get_millis()
 
         while True:
-            self.uart.write(bytes(TestCommands.TEST_END, 'utf-8'))
-            print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {TestCommands.TEST_END}")
+            self.uart.write(bytes(ThingpilotProvisioner.PROV_END, 'utf-8'))
+            print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.PROV_END}")
 
             s = str(self.uart.readline())
             print(f"{datetime.now()} provision.py: ({self.module.title()}) received: {s}")
