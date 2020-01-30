@@ -133,6 +133,8 @@
         $('#modulePicture').removeClass("grayed");
         $('#uniqueIDButton').prop('disabled', false);
 
+        socket.emit('get_unique_id')
+
         $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
 
         if(fw_filename != null) {
@@ -152,6 +154,9 @@
         $('#testButton').prop('disabled', true);
 
         $('#terminal').html("*** Module disconnected at: " + $('#time').html() + " <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
+
+        uniqueID = null;
+        $('#uniqueID').val('')
 
         $('#modulePicture').addClass("grayed");
     });
