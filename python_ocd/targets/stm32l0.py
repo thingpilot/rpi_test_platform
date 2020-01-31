@@ -20,6 +20,9 @@ class STM32L0(OCDTarget):
         super().__init__(openocd_cfg, tcl_ip, tcl_port)
 
     def get_unique_id(self):
+        self.init()
+        self.reset_halt()
+
         result = self.send('mdw 0x1FF80050 3')
 
         if result['success']:
