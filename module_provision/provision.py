@@ -5,15 +5,6 @@
     brief:   Handles device provisioning and setup with the ThingPilot backend
 """
 
-"""
-    file:    hardware_test.py
-    version: 0.1.0
-    author:  Adam Mitchell
-    brief:   Python script to verify Wright/Earhart module hardware functionality. This will test
-             that all available GPIO pins function correctly as well as all available comms busses,
-             including I2C, SPI and UART.
-"""
-
 # Standard library imports
 import functools
 import time

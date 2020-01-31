@@ -216,7 +216,7 @@ def exit_handler():
 
 if __name__ == '__main__':
     atexit.register(exit_handler)
-    
+
     try:
         socketio.run(app, host=app_utils.get_ip_address(), port=80, debug=True)
     except KeyboardInterrupt:
