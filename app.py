@@ -114,7 +114,7 @@ def start_programming(filename):
             else:
                 socketio.emit('js_programming_success')
         else:
-            socketio.emit('js_programming_progress', 'Failed to connect to Tcl server\n')
+            socketio.emit('js_programming_progress', '    Failed to connect to Tcl server\n')
             socketio.emit('js_programming_error', 'Failed to connect to Tcl server\n')
 
 
