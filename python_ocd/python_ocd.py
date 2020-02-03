@@ -9,19 +9,18 @@
 # Standard library imports
 import functools
 import os
+import socket
 import subprocess
 import sys
-import time
+import threading
 
 try:
     import thread
 except ImportError:
     import _thread as thread
 
-# Import eventlet compatible socket and threading libraries
-import eventlet
-socket = eventlet.import_patched('socket')
-threading = eventlet.import_patched('threading')
+# Monkey patch standard libs for eventlet compatibility
+import eventlet; eventlet.monkey_patch()
 
 
 class TimeoutError(Exception): 
@@ -30,7 +29,6 @@ class TimeoutError(Exception):
 
 class OCD():
     COMMAND_TOKEN = '\x1a'
-    INIT_DELAY    = 0.1
 
     def __init__(self, openocd_cfg, tcl_ip='localhost', tcl_port=6666):
         if __name__ == '__main__':
@@ -42,6 +40,7 @@ class OCD():
         self.tcl_port = tcl_port
         self.buffer_size = 4096
         self.timeout_flag = False
+        self._ocd_process = None
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -54,18 +53,22 @@ class OCD():
 
         return wrap
 
-    def _handle_timeout(self, signum, frame):
+    def _handle_timeout(self):
         self.timeout_flag = True
         raise TimeoutError
 
     def _deinit_openocd(self):
-        os.system('sudo pkill -9 openocd')
+        if self._ocd_process is None:
+            os.system('sudo pkill -9 openocd')
+        else:
+            self._ocd_process.kill()
 
     @_reset_timeout_flag
     def _init_openocd(self, timeout_s=5):
         try:
-            process = subprocess.Popen(['sudo', 'openocd', '-f', f'{self.openocd_cfg}'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except subprocess.CalledProcessError as e:
+            self._ocd_process = subprocess.Popen(['sudo', 'openocd', '-f', f'{self.openocd_cfg}'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError:
+            self._ocd_process = None
             self._deinit_openocd()
             return False
 
@@ -73,11 +76,10 @@ class OCD():
         timer.start()
 
         try:
-            for line in process.stderr:
+            for line in self._ocd_process.stderr:
                 line_decoded = line.decode('utf-8')
                 
                 if '6666 for tcl connections' in line_decoded.lower():
-                    time.sleep(OCD.INIT_DELAY)
                     break
         except TimeoutError:
             pass
@@ -108,6 +110,7 @@ class OCD():
         while True:
             chunk = self.sock.recv(self.buffer_size)
             data += chunk
+            
             if bytes(OCD.COMMAND_TOKEN, encoding='utf-8') in chunk:
                 break
 
@@ -131,7 +134,7 @@ class OCD():
         return self.get_buffer_size()
 
     @_reset_timeout_flag
-    def send(self, command, recv_string=None, timeout_s=10):
+    def send(self, command, recv_string=None, timeout_s=20):
         success = False
         recv_data = None
         error = ''
