@@ -66,7 +66,11 @@ class OCD():
     @_reset_timeout_flag
     def _init_openocd(self, timeout_s=5):
         try:
-            self._ocd_process = subprocess.Popen(['sudo', 'openocd', '-f', f'{self.openocd_cfg}'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self._ocd_process = subprocess.Popen(
+                ['sudo', 'openocd', '-f', f'{self.openocd_cfg}'], 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE
+            )
         except subprocess.CalledProcessError:
             self._ocd_process = None
             self._deinit_openocd()
@@ -110,7 +114,7 @@ class OCD():
         while True:
             chunk = self.sock.recv(self.buffer_size)
             data += chunk
-            
+
             if bytes(OCD.COMMAND_TOKEN, encoding='utf-8') in chunk:
                 break
 
