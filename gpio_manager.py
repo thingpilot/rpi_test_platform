@@ -63,7 +63,7 @@ if __name__ == "__main__":
             connected = True
             break
         except socketio.exceptions.ConnectionError:
-            time.sleep(1)
+            sio.sleep(1)
 
     if connected:
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                         print(f"{datetime.datetime.now()} gpio_manager.py: Module disconnected")
                         sio.emit('MODULE_NOT_PRESENT')
 
-                time.sleep(0.15)       
+                sio.sleep(0.15)       
         except KeyboardInterrupt:
             pass
     
