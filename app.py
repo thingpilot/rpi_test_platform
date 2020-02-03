@@ -6,13 +6,14 @@
 """
 
 # Standard library imports
-import atexit, datetime
+import atexit, datetime, requests
 from os import urandom, path, getcwd
 
 # 3rd-party library imports
 import eventlet
+import RPi.GPIO as gpio
 from flask import Flask, render_template, request, Response
-from flask_socketio import SocketIO
+from flask_socketio import Namespace, SocketIO
 from werkzeug.utils import secure_filename
 
 # Thingpilot library imports
@@ -20,6 +21,7 @@ import app_utils
 from python_ocd.targets import stm32l0
 from module_tests import hardware_test
 from module_provision import provision
+
 
 # Global Flask and SocketIO objects
 ALLOWED_FW_EXTENSIONS = {'bin'}
@@ -30,6 +32,20 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = f"{urandom(64)}"
 app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
 socketio = SocketIO(app, async_mode='eventlet')
+
+
+
+class DeviceNamespace(Namespace):
+    def on_connect(self):
+        pass
+
+    def on_disconnect(self):
+        pass
+
+
+class WebAppNamespace(Namespace):
+    def on_event(self):
+        pass
 
 
 @app.route('/')
@@ -136,6 +152,12 @@ def start_provision(module, url, uid):
     if module is None or url is None or uid is None:
         return Response(status=400)
 
+    print('starting provision')
+    data = { "provisionSession": url, "processorId": uid }
+    r = requests.post('http://192.168.1.197:3030/devices', json=data)
+    print(r)
+
+    """
     with stm32l0.STM32L0() as cpu:
         if cpu:
             cpu.init()
@@ -150,6 +172,7 @@ def start_provision(module, url, uid):
 
     for result in prov.provision():
         socketio.emit('js_programming_progress', result['message'])
+    """
 
 
 @socketio.on('begin_test')
@@ -216,7 +239,7 @@ def exit_handler():
 if __name__ == '__main__':
     atexit.register(exit_handler)
 
-    try:
+    try:      
         socketio.run(app, host=app_utils.get_ip_address(), port=80, debug=True)
     except KeyboardInterrupt:
         sys.exit()
