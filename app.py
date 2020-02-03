@@ -8,11 +8,10 @@
 # Standard library imports
 import atexit, datetime
 from os import urandom, path, getcwd
-from time import sleep
 
 # 3rd-party library imports
 import eventlet
-from flask import Flask, render_template, escape, request, url_for, redirect, flash, Response
+from flask import Flask, render_template, request, Response
 from flask_socketio import SocketIO
 from werkzeug.utils import secure_filename
 
