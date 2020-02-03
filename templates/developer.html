@@ -414,24 +414,17 @@
     function handleProvision() {
         var candidate_url = $('#provisionURL')[0].value
         
-        if(isValidURL(candidate_url)) {
-            $('#provisionButton').removeClass("btn btn-danger")
-            $('#provisionButton').removeClass("btn btn-secondary").addClass("btn btn-success");
+        $('#provisionButton').removeClass("btn btn-danger")
+        $('#provisionButton').removeClass("btn btn-secondary").addClass("btn btn-success");
 
-            if(uniqueID != null) {
-                bootstrap_alert.primary("Provision started...")
-                socket.emit('start_provision', module, candidate_url, uniqueID)
-            }
-            else {
-                $('#provisionButton').removeClass("btn btn-secondary")
-                $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger");
-                bootstrap_alert.warning("Unique ID required to provision")
-            }
+        if(uniqueID != null) {
+            bootstrap_alert.primary("Provision started...")
+            socket.emit('start_provision', module, candidate_url, uniqueID)
         }
         else {
             $('#provisionButton').removeClass("btn btn-secondary")
             $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger");
-            bootstrap_alert.warning("Invalid provisioning URL")
+            bootstrap_alert.warning("Unique ID required to provision")
         }
     };
 
