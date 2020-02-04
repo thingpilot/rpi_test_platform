@@ -155,7 +155,11 @@ class OCD():
             timer.start()
             
             try:
-                recv_data = self._recv()
+                try:
+                    recv_data = self._recv()
+                except ConnectionResetError as e:
+                    timer.cancel()
+                    return { 'success': False, 'message': 'Module likely isn\'t connected properly to the test HAT', 'error': e }
             except TimeoutError: 
                 pass
             finally:
