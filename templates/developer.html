@@ -1,0 +1,460 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div id="alert_placeholder"></div>
+<div class="jumbotron">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <h1 class="text-center">Developer Mode</h1>
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <b>Select module:</b>
+                <button class="btn btn-primary dropdown-toggle" type="button" id="moduleSelectButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Module
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <a class="dropdown-item" data-name="Wright" href="#">Wright</a>
+                    <a class="dropdown-item" data-name="Earhart" href="#">Earhart</a>
+                    <a class="dropdown-item" data-name="None" href="#">None</a>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <img src="../static/images/Wright.png" alt="cool module" class="grayable" id="modulePicture">
+            </div>  
+            <div class="col-sm-6">
+                
+            </div>     
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <form method=post enctype=multipart/form-data id="firmwareUploadForm">
+                    <b>Select firmware:</b>
+                    <input type="file" id="firmwareUploadButton" accept=".bin" name=file onchange=handleFirmwareUpload(this.files)>
+                    <label class="btn btn-secondary dropdown-toggle" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
+                </form>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-secondary" type="button" id="programButton" disabled onclick=handleProgram()>
+                    Program
+                </button>
+            </div>  
+            <div class="col-sm-6">
+                <label id="firmwareDateLabel">Modified: </label>
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="uniqueID" rows="1" placeholder="STM32 Unique ID"></input>
+                    <div class="input-group-append">
+                        <button class="btn btn-secondary", type="button" onclick="copyToClipboard('#uniqueID')"><i class="far fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-secondary" type="button" id="uniqueIDButton" onclick="handleUniqueID()">
+                    Get UID
+                </button>
+            </div>  
+            <div class="col-sm-6">
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="provisionURL" rows="1" placeholder="Provision URL"></input>
+                    <div class="input-group-append">
+                        <button id="provisionCopyButton" class="btn btn-secondary", type="button" onclick="copyToClipboard('#provisionURL')"><i class="far fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-secondary" type="button" id="provisionButton" onclick="handleProvision()">
+                    Provision
+                </button>
+            </div>  
+            <div class="col-sm-6">
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="row">
+                    <button class="btn btn-primary" type="button" id="testButton" disabled onclick=handleTest()>
+                        Run Test
+                    </button>
+                    &nbsp;
+                    <button class="btn btn-danger" id="testAfterProgram" onclick=toggleTestAfterProgram() value=false>
+                        Test after Program
+                    </button>
+                    &nbsp;
+                    <button class="btn btn-danger" id="provisionAfterTest" onclick=toggleProvisionAfterTest() value=false>
+                        Provision after Test
+                    </button>
+                    </div>
+                </div>      
+            </div>  
+            <div class="col-sm-2">
+            </div>  
+            <div class="col-sm-4">
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <pre class="pre-scrollable"> 
+<div id="terminal"> 
+</div>
+            </pre> 
+        </div>
+    </div>
+</div>
+
+<script>
+    var socket = io();
+    var pgm_start_time;
+    var fw_filename = null;
+    var module = null;
+    var testAfterProgram = false;
+    var provisionAfterTest = false;
+    var uniqueID = null;
+    var connected = false;
+
+
+    socket.on('js_module_present', function() {
+        connected = true;
+
+        $('#modulePicture').removeClass("grayed");
+        $('#uniqueIDButton').prop('disabled', false);
+
+        handleUniqueID();
+
+        $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
+
+        if(fw_filename != null) {
+            $('#programButton').prop('disabled', false);
+        }
+
+        if(module != null) {
+            $('#testButton').prop('disabled', false);
+        }
+    });
+
+    socket.on('js_module_not_present', function() {
+        connected = false;
+
+        $('#programButton').prop('disabled', true);
+        $('#uniqueIDButton').prop('disabled', true);
+        $('#testButton').prop('disabled', true);
+
+        $('#terminal').html("*** Module disconnected at: " + $('#time').html() + " <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
+
+        uniqueID = null;
+        $('#uniqueID').val('')
+
+        $('#modulePicture').addClass("grayed");
+    });
+
+    function programProgressIndicator() {
+        $('#terminal').html("." + $('#terminal').html())
+    }
+
+    var programProgressIndicatorIntervalId;
+
+    function programProgressIndicatorInterval() {
+        programProgressIndicator();
+        programProgressIndicatorIntervalId = setInterval(programProgressIndicator, 500);
+    }
+
+    socket.on('js_programming_started', function() {
+        bootstrap_alert.primary("Programming started...")
+        $('#programButton').removeClass("btn btn-danger")
+        $('#programButton').removeClass("btn btn-success").addClass("btn btn-primary")
+        $('#testButton').removeClass("btn btn-danger")
+        $('#testButton').removeClass("btn btn-success").addClass("btn btn-primary")
+        $('#modulePicture').addClass("rotate")
+        $('#terminal').html("*** Programming " + fw_filename + " started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+        $('#terminal').html("\n" + $('#terminal').html())
+        programProgressIndicatorInterval()
+        pgm_start_time = new Date().getTime();
+    })
+
+    socket.on('js_programming_progress', function(data) {
+        if(data.toLowerCase().includes("failed")) {
+            $('#testButton').removeClass("btn btn-primary")
+            $('#testButton').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else if(data.toLowerCase().includes("passed")) {
+            $('#testButton').removeClass("btn btn-primary")
+            $('#testButton').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+
+        $('#terminal').html(data + $('#terminal').html())
+    })
+
+    socket.on('js_programming_success', function() {
+        var pgm_end_time = new Date().getTime();
+        bootstrap_alert.success("Programming successful. Took: " + (pgm_end_time - pgm_start_time) + "ms")
+        clearInterval(programProgressIndicatorIntervalId)
+        $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
+        $('#programButton').removeClass("btn btn-danger")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-success")
+        $('#modulePicture').removeClass("rotate")
+
+        if(testAfterProgram) {
+            handleTest()
+        }
+    })
+
+    socket.on('js_programming_error', function(data) {
+        var pgm_end_time = new Date().getTime();
+        bootstrap_alert.warning("Programming failed. Took: " + (pgm_end_time - pgm_start_time) + "ms. " + data)
+        clearInterval(programProgressIndicatorIntervalId)
+        $('#terminal').html("*** Programming failed <i class='fas fa-times-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
+        $('#programButton').removeClass("btn btn-success")
+        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
+        $('#modulePicture').removeClass("rotate")
+    })
+
+    socket.on('js_get_unique_id_success', function(data) {
+        $('#uniqueID').val(data)
+        uniqueID = data
+        $('#uniqueIDButton').removeClass("btn btn-danger")
+        $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-success")
+
+        $('#terminal').html("*** Get UID success <i class='fas fa-check-circle'></i> UID: " + uniqueID + " ***\n" + $('#terminal').html())
+    })
+
+    socket.on('js_get_unique_id_fail', function(data) {
+        $('#uniqueIDButton').removeClass("btn btn-success")
+        $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
+
+        $('#terminal').html("*** Get UID failed <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
+    })
+
+    socket.on('js_fail_init_cpu_test', (data) => {
+        $('#testButton').removeClass("btn btn-primary")
+        $('#testButton').removeClass("btn btn-success").addClass("btn btn-danger")
+
+        bootstrap_alert.warning("Test failed. Failed to initialise CPU")
+    })
+
+    socket.on('js_test_complete', (data) => {
+        if(data) {
+            bootstrap_alert.success("Test passed!")
+
+            if(provisionAfterTest == true) {
+                handleProvision()
+            }
+        }
+        else {
+            bootstrap_alert.warning("Test failed.")
+        }
+    })
+
+    socket.on('js_fail_init_cpu_provision', (data) => {
+        $('#provisionButton').removeClass("btn btn-secondary")
+        $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger")
+
+        bootstrap_alert.warning("Provisioning failed. Failed to initialise CPU")
+    })
+
+    $(document).ready( () => {
+        socket.emit('is_module_present');
+    })
+
+    function toggleTestAfterProgram() {
+        current_value = $('#testAfterProgram').val()
+
+        if(current_value == 'true') {
+            testAfterProgram = false;
+            $('#testAfterProgram').val('false')
+            $('#testAfterProgram').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else {
+            testAfterProgram = true;
+            $('#testAfterProgram').val('true')
+            $('#testAfterProgram').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+    }
+
+    function toggleProvisionAfterTest() {
+        current_value = $('#provisionAfterTest').val()
+
+        if(current_value == 'true') {
+            provisionAfterTest = false;
+            $('#provisionAfterTest').val('false')
+            $('#provisionAfterTest').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else {
+            provisionAfterTest = true;
+            $('#provisionAfterTest').val('true')
+            $('#provisionAfterTest').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+    }
+
+    function copyToClipboard(element) {
+        var $temp = $("<input>");
+        $("body").append($temp);
+        $temp.val($(element).val()).select();
+        document.execCommand("copy");
+        $temp.remove();
+
+        bootstrap_alert.success("Copied: " + $(element).val())
+    }
+
+    $('.dropdown-item').click((event) => {
+        var name = event.currentTarget;
+        module = name.getAttribute("data-name");
+
+        if(module == "None")
+        {
+            $('#moduleSelectButton').text("Module");
+            $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-primary dropdown-toggle");
+
+            $('#testButton').prop('disabled', true);
+        }
+        else 
+        {
+            if(connected == true) {
+                $('#testButton').prop('disabled', false);
+            }    
+            
+            $('#moduleSelectButton').text(name.getAttribute("data-name"));
+            $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle");
+    
+            $('#modulePicture').attr("src", "../static/images/" + module + ".png")
+        }
+    });
+
+    function handleFirmwareUpload(file) {
+        var form_data = new FormData($('#firmwareUploadForm')[0]);
+
+        var filename = file[0].name;
+        fw_filename = filename;
+        var extension = filename.split('.')[1].toLowerCase();
+        var date = file[0].lastModifiedDate.toString().slice(0, 33);
+
+        $.ajax({
+            data: form_data,
+            type: "POST",
+            url: "/firmware",
+            contentType: false, 
+            cache: false,
+            processData: false,
+            beforeSend: function() {
+                
+            },
+            success: function(data) {
+                $('#firmwareUploadLabel').removeClass("btn btn-danger");
+                $('#firmwareUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
+                $('#firmwareUploadLabel').text(filename);
+                $('#firmwareDateLabel').text("Modified: " + date);
+
+                $('#programButton').prop('disabled', false);
+                $('#programButton').removeClass("btn btn-success")
+                $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary");
+
+                var upload_date = new Date().toLocaleString();
+
+                bootstrap_alert.success("Successfully uploaded " + filename + " at " + upload_date);
+            },
+            error: function(data) {
+                $('#firmwareUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
+                $('#firmwareUploadLabel').text("Invalid");
+                $('#firmwareDateLabel').text("Modified: ");
+
+                $('#programButton').prop('disabled', true);
+                $('#programButton').removeClass("btn btn-success")
+                $('#programButton').removeClass("btn btn-primary").addClass("btn btn-secondary");
+
+                var upload_date = new Date().toLocaleString();
+
+                if(data.status == 400) {
+                    bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date);
+                }
+                else if(data.status == 415) {
+                    bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date);
+                }
+                else {
+                    bootstrap_alert.warning("Unknown error at " + upload_date);
+                }
+            }
+        });
+
+        $('#firmwareUploadButton').val("");
+    }
+
+    function handleProgram() {
+        socket.emit('start_programming', $('#firmwareUploadLabel').text())
+    }
+
+    function handleUniqueID(){
+        socket.emit('get_unique_id')
+    }
+
+    function handleTest() {
+        $('#testButton').removeClass("btn btn-danger")
+        $('#testButton').removeClass("btn btn-success").addClass("btn btn-primary")
+        bootstrap_alert.primary("Test started...")
+        socket.emit('begin_test', module)
+    }
+
+    function isValidURL(string) {
+        var res = string.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
+        return (res !== null)
+    };
+
+    function handleProvision() {
+        var candidate_url = $('#provisionURL')[0].value
+        
+        $('#provisionButton').removeClass("btn btn-danger")
+        $('#provisionButton').removeClass("btn btn-secondary").addClass("btn btn-success");
+
+        if(uniqueID != null) {
+            bootstrap_alert.primary("Provision started...")
+            socket.emit('start_provision', module, candidate_url, uniqueID)
+        }
+        else {
+            $('#provisionButton').removeClass("btn btn-secondary")
+            $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger");
+            bootstrap_alert.warning("Unique ID required to provision")
+        }
+    };
+
+    bootstrap_alert = function() {}
+
+    bootstrap_alert.success = function(message) {
+        $('#alert_placeholder').html('<div class="alert alert-success"><span>'+message+'</span></div>')
+    }
+
+    bootstrap_alert.warning = function(message) {
+        $('#alert_placeholder').html('<div class="alert alert-danger"><span>'+message+'</span></div>')
+    }
+
+    bootstrap_alert.primary = function(message) {
+        $('#alert_placeholder').html('<div class="alert alert-primary"><span>'+message+'</span></div>')
+    }
+
+    var serverTime = new Date();
+
+    function updateTime() {
+        serverTime = new Date(serverTime.getTime() + 1000);
+        $('#time').html(serverTime.toGMTString());
+    }
+
+    $(function() {
+        updateTime();
+        setInterval(updateTime, 1000);
+    })
+</script>
+{% endblock %}
+
+

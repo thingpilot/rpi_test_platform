@@ -1,0 +1,41 @@
+#firmwareUploadButton {
+    display: none;
+}
+
+.rotate {
+    animation: rotation 0.5s infinite linear;
+  }
+  @keyframes rotation {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(359deg);
+    }
+  }
+
+#testUploadButton {
+    display: none;
+}
+
+img.grayable {
+    width: 100px;
+}
+
+img.grayed {
+    filter: grayscale(100%);
+    -webkit-filter: grayscale(100%); 
+    -moz-filter: grayscale(100%);
+    -ms-filter: grayscale(100%); 
+    -o-filter: grayscale(100%);
+    filter: gray;
+    -webkit-filter: grayscale(1);
+}
+
+.fa-check-circle {
+    color: #00b100;
+}
+
+.fa-times-circle {
+  color: #FF0000;
+}
