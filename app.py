@@ -31,7 +31,7 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = f"{urandom(64)}"
 app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
-socketio = SocketIO(app, async_mode='eventlet')
+socketio = SocketIO(app, async_mode='eventlet', logger=True)
 
 
 
