@@ -127,13 +127,14 @@
     var uniqueID = null;
     var connected = false;
 
+
     socket.on('js_module_present', function() {
         connected = true;
 
         $('#modulePicture').removeClass("grayed");
         $('#uniqueIDButton').prop('disabled', false);
 
-        socket.emit('get_unique_id')
+        handleUniqueID();
 
         $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
 
