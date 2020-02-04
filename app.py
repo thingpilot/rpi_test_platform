@@ -98,6 +98,10 @@ def is_module_present():
     socketio.emit('IS_MODULE_PRESENT')
 
 
+def programming_success_cb():
+    print('success callback')
+
+
 @socketio.on('start_programming')
 def start_programming(filename):
     socketio.emit('js_programming_started')
@@ -105,8 +109,11 @@ def start_programming(filename):
     error = False
 
     with stm32l0.STM32L0() as cpu:
+        print('with cpu')
         if cpu:
+            print('if cpu')
             for result in cpu.program_bin(filename, stm32l0.STM32L0.PGM_START_ADDRESS):
+                print(result)
                 if result['success']:
                     if result['message'] != '':
                         if 'enabled\nwrote' in result['message']:
@@ -125,10 +132,14 @@ def start_programming(filename):
                 socketio.emit('js_programming_progress', message)
 
             if error:
+                print('Error here')
                 socketio.emit('js_programming_error', output_list[-1])
             else:
-                socketio.emit('js_programming_success')
+                print('Error there')
+                socketio.emit('js_programming_success', callback=programming_success_cb)
+                print('We did succeed')
         else:
+            print('Error everywhere')
             socketio.emit('js_programming_progress', '    Failed to connect to Tcl server\n')
             socketio.emit('js_programming_error', 'Failed to connect to Tcl server\n')
 
