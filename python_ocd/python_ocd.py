@@ -35,14 +35,14 @@ class OCD():
             self.openocd_cfg = f'../configs/{openocd_cfg}'
         else:
             self.openocd_cfg = f'python_ocd/configs/{openocd_cfg}'
-            
+
         self.tcl_ip = tcl_ip
         self.tcl_port = tcl_port
         self.buffer_size = 4096
         self.timeout_flag = False
         self._ocd_process = None
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = None
 
     def _reset_timeout_flag(func):
         @functools.wraps(func)
@@ -97,6 +97,8 @@ class OCD():
 
     def __enter__(self):
         if self._init_openocd():
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
             try:
                 self.sock.connect((self.tcl_ip, self.tcl_port))
             except ConnectionError:
@@ -147,7 +149,7 @@ class OCD():
 
         try:
             self.sock.send(data)
-        except BrokenPipeError as e:
+        except (BrokenPipeError, ConnectionResetError) as e:
             return { 'success': False, 'message': 'Failed to send to Tcl server. Server appears to be down', 'error': e}
 
         if timeout_s:

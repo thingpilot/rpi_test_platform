@@ -6,7 +6,7 @@
 """
 
 # Standard library imports
-import atexit, datetime, requests
+import atexit, datetime, requests, subprocess
 from os import urandom, path, getcwd
 
 # 3rd-party library imports
@@ -18,7 +18,7 @@ from werkzeug.utils import secure_filename
 
 # Thingpilot library imports
 import app_utils
-from python_ocd.targets import stm32l0
+#from python_ocd.targets import stm32l0
 from module_tests import hardware_test
 from module_provision import provision
 
@@ -31,21 +31,31 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = f"{urandom(64)}"
 app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
-socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
+socketio = SocketIO(app, async_mode='eventlet', logger=True)
 
 
 
 class DeviceNamespace(Namespace):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def on_connect(self):
-        pass
+        print('Device Namespace connected')
 
     def on_disconnect(self):
-        pass
+        print('Device Namespace disconnected')
+    
+    def on_get_unique_id(self):
+        socketio.emit('get_unique_id', namespace='/STM32L0Namespace')
 
+    def on_get_unique_id_progress(self, data):
+        socketio.emit('get_unique_id_progress', data, namespace='/WebAppNamespace')
 
-class WebAppNamespace(Namespace):
-    def on_event(self):
-        pass
+    def on_program_bin(self, binary):
+        socketio.emit('program_bin', binary, namespace='/STM32L0Namespace')
+
+    def on_program_bin_progress(self, data):
+        socketio.emit('program_bin_progress', data, namespace='/WebAppNamespace')
 
 
 @app.route('/')
@@ -108,6 +118,7 @@ def start_programming(filename):
     output_list = list()
     error = False
 
+    """
     with stm32l0.STM32L0() as cpu:
         print('with cpu')
         if cpu:
@@ -142,10 +153,13 @@ def start_programming(filename):
             print('Error everywhere')
             socketio.emit('js_programming_progress', '    Failed to connect to Tcl server\n')
             socketio.emit('js_programming_error', 'Failed to connect to Tcl server\n')
+    """
 
 
-@socketio.on('get_unique_id')
+#@socketio.on('get_unique_id')
 def get_device_id():
+    pass
+    """
     with stm32l0.STM32L0() as cpu:
         if cpu:
             result = cpu.get_unique_id()
@@ -156,6 +170,7 @@ def get_device_id():
                 socketio.emit('js_get_unique_id_fail', f'Message: {result["message"]} Error: {result["error"]}\n')
         else:
             socketio.emit('js_get_unique_id_fail', f'Failed to connect to Tcl server\n')
+    """
 
 
 @socketio.on('start_provision')
@@ -191,6 +206,7 @@ def begin_test(module):
     if module is None:
         return Response(status=400)
 
+    """
     with stm32l0.STM32L0() as cpu:
         if cpu:
             cpu.init()
@@ -239,6 +255,7 @@ def begin_test(module):
             socketio.sleep(0.1)
         
     socketio.emit('js_test_complete', test_bool)
+    """
 
 
 def exit_handler():
@@ -249,6 +266,8 @@ def exit_handler():
 
 if __name__ == '__main__':
     atexit.register(exit_handler)
+
+    socketio.on_namespace(DeviceNamespace('/DeviceNamespace'))
 
     try:      
         socketio.run(app, host=app_utils.get_ip_address(), port=80, debug=True)

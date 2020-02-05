@@ -20,7 +20,17 @@ if __name__ == '__main__':
     # Import the OCD interface from python_ocd.py
     from python_ocd import OCD
 else:
-    from python_ocd.python_ocd import OCD
+    try:
+        from python_ocd.python_ocd import OCD
+    except ModuleNotFoundError:
+        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        parentdir = os.path.dirname(currentdir)
+        sys.path.insert(0, parentdir) 
+
+        # Import the OCD interface from python_ocd.py
+        from python_ocd import OCD
+
+import eventlet; eventlet.monkey_patch()
 
 
 class OCDTarget(OCD):
@@ -37,16 +47,25 @@ class OCDTarget(OCD):
             for state in OCDTarget.STATES:
                 if state in result['message']:
                     result['state'] = state
+                    result['success'] = True
                     break
             
-            result['success'] = False
+            if not result['success']:
+                result['success'] = False
         else:
             result['success'] = False
 
         return result
 
     def init(self):
-        return self.send('init')
+        result = self.send('init')
+
+        if result['success']:
+            result['message'] = 'Target CPU successfully initialised'
+        else:
+            result['message'] = 'Failed to initialise target CPU'
+
+        return result
 
     def reset_run(self, verify=True):
         result = self.send('reset run')
@@ -54,7 +73,12 @@ class OCDTarget(OCD):
         state = self.get_state()
         if state['success']:   
             if verify:
-                return self.get_state()['state'] == 'running'
+                if self.get_state()['state'] == 'running':
+                    result['success'] = True
+                    result['message'] = 'Target CPU running'
+                else:
+                    result['success'] = False
+                    result['message'] = 'Failed to make target CPU run'
         
         return result
 
@@ -64,7 +88,12 @@ class OCDTarget(OCD):
         state = self.get_state()
         if state['success']:   
             if verify:
-                return self.get_state()['state'] == 'halted'
+                if self.get_state()['state'] == 'halted':
+                    result['success'] = True
+                    result['message'] = 'Target CPU successfully halted'
+                else:
+                    result['success'] = False
+                    result['message'] = 'Failed to halt target CPU'
         
         return result
 

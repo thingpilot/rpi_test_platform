@@ -119,6 +119,10 @@
 
 <script>
     var socket = io();
+
+    var device_namespace = io('/DeviceNamespace')
+    var webapp_namespace = io('/WebAppNamespace')
+
     var pgm_start_time;
     var fw_filename = null;
     var module = null;
@@ -126,6 +130,53 @@
     var provisionAfterTest = false;
     var uniqueID = null;
     var connected = false;
+
+    function handleProgram() {
+        device_namespace.emit('program_bin', $('#firmwareUploadLabel').text())
+    }
+    
+    webapp_namespace.on('program_bin_progress', (data) => {
+        console.log(data)
+
+        if(data.message.toLowerCase().includes("failed")) {
+            $('#testButton').removeClass("btn btn-primary")
+            $('#testButton').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else if(data.message.toLowerCase().includes("passed")) {
+            $('#testButton').removeClass("btn btn-primary")
+            $('#testButton').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+
+        $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+    })
+
+
+    function handleUniqueID(){
+        device_namespace.emit('get_unique_id')
+    }
+
+    webapp_namespace.on('get_unique_id_progress', (data) => {
+        if(data.success) 
+        {
+            $('#uniqueID').val(data.message)
+            uniqueID = data.message
+
+            $('#uniqueIDButton').removeClass("btn btn-danger")
+            $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-success")
+
+            $('#terminal').html("*** Get UID success <i class='fas fa-check-circle'></i> UID: " + uniqueID + " ***\n" + $('#terminal').html())
+        }
+        else 
+        {
+            $('#uniqueID').val('')
+            uniqueID = null
+
+            $('#uniqueIDButton').removeClass("btn btn-success")
+            $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
+
+            $('#terminal').html("*** Get UID failed  <i class='fas fa-times-circle'></i> " + data.error + ": " + data.message + " ***\n" + $('#terminal').html())
+        }
+    })
 
 
     socket.on('js_module_present', function() {
@@ -187,16 +238,7 @@
     })
 
     socket.on('js_programming_progress', function(data) {
-        if(data.toLowerCase().includes("failed")) {
-            $('#testButton').removeClass("btn btn-primary")
-            $('#testButton').removeClass("btn btn-success").addClass("btn btn-danger")
-        }
-        else if(data.toLowerCase().includes("passed")) {
-            $('#testButton').removeClass("btn btn-primary")
-            $('#testButton').removeClass("btn btn-danger").addClass("btn btn-success")
-        }
-
-        $('#terminal').html(data + $('#terminal').html())
+        
     })
 
     socket.on('js_programming_success', function() {
@@ -224,12 +266,7 @@
     })
 
     socket.on('js_get_unique_id_success', function(data) {
-        $('#uniqueID').val(data)
-        uniqueID = data
-        $('#uniqueIDButton').removeClass("btn btn-danger")
-        $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-success")
-
-        $('#terminal').html("*** Get UID success <i class='fas fa-check-circle'></i> UID: " + uniqueID + " ***\n" + $('#terminal').html())
+        
     })
 
     socket.on('js_get_unique_id_fail', function(data) {
@@ -390,14 +427,6 @@
         });
 
         $('#firmwareUploadButton').val("");
-    }
-
-    function handleProgram() {
-        socket.emit('start_programming', $('#firmwareUploadLabel').text())
-    }
-
-    function handleUniqueID(){
-        socket.emit('get_unique_id')
     }
 
     function handleTest() {
