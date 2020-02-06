@@ -146,9 +146,19 @@
     var connected = false;
 
     function enableButton(button) {
-        if(module != null && connected)
+        if(module != null && module != 'None' && connected)
         {
-            $('#' + button).prop('disabled', false)
+            if(button == 'programButton')
+            {
+                if(fw_filename != null) 
+                {
+                    $('#' + button).prop('disabled', false)
+                }
+            }
+            else
+            {
+                $('#' + button).prop('disabled', false)
+            }       
         }
     }
 
@@ -446,7 +456,7 @@
         $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
 
         if(fw_filename != null) {
-            $('#programButton').prop('disabled', false);
+            enableButton('programButton')
         }
 
         enableButton('programButton')
@@ -529,6 +539,8 @@
         fw_filename = filename;
         var extension = filename.split('.')[1].toLowerCase();
         var date = file[0].lastModifiedDate.toString().slice(0, 33);
+
+        enableButton('programButton')
 
         $.ajax({
             data: form_data,
