@@ -35,15 +35,18 @@
                 <form method=post enctype=multipart/form-data id="firmwareUploadForm">
                     <b>Select firmware:</b>
                     <input type="file" id="firmwareUploadButton" accept=".bin" name=file onchange=handleFirmwareUpload(this.files)>
-                    <label class="btn btn-secondary dropdown-toggle" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
+                    <label class="btn btn-primary dropdown-toggle" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
                 </form>
             </div>  
             <div class="col-sm-2">
-                <button class="btn btn-secondary" type="button" id="programButton" disabled onclick=handleProgram()>
+                <button class="btn btn-primary" type="button" id="programButton" disabled onclick=handleProgram()>
                     Program
                 </button>
-            </div>  
-            <div class="col-sm-6">
+            </div> 
+            <div class="col-sm-1">
+                <label id="programStatus"><i class='fas fa-times-circle'></i></label>
+            </div> 
+            <div class="col-sm-5">
                 <label id="firmwareDateLabel">Modified: </label>
             </div>
         </div>
@@ -58,11 +61,14 @@
                 </div>
             </div>  
             <div class="col-sm-2">
-                <button class="btn btn-secondary" type="button" id="uniqueIDButton" onclick="handleUniqueID()">
+                <button class="btn btn-primary" type="button" id="uniqueIDButton" onclick="handleUniqueID()">
                     Get UID
                 </button>
             </div>  
-            <div class="col-sm-6">
+            <div class="col-sm-1">
+                <label id="UIDStatus"><i class='fas fa-times-circle'></i></label>
+            </div>
+            <div class="col-sm-5">
             </div>
         </div>
         <p></p>
@@ -80,7 +86,10 @@
                     Provision
                 </button>
             </div>  
-            <div class="col-sm-6">
+            <div class="col-sm-1">
+                <label id="provisionStatus"><i class='fas fa-times-circle'></i></label>
+            </div>
+            <div class="col-sm-5">
             </div>
         </div>
         <p></p>
@@ -101,9 +110,10 @@
                     </div>
                 </div>      
             </div>  
-            <div class="col-sm-2">
+            <div class="col-sm-1">
+                <label id="testStatus"><i class='fas fa-times-circle'></i></label>
             </div>  
-            <div class="col-sm-4">
+            <div class="col-sm-5">           
             </div>
         </div>
     </div>
@@ -195,6 +205,8 @@
 
     function handleUniqueID(){
         device_namespace.emit('get_unique_id')
+
+        $('#uniqueIDButton').prop('disabled', true)
     }
 
     webapp_namespace.on('get_unique_id_progress', (data) => {
@@ -203,8 +215,7 @@
             $('#uniqueID').val(data.message)
             uniqueID = data.message
 
-            $('#uniqueIDButton').removeClass("btn btn-danger")
-            $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-success")
+            $('#UIDStatus').html("<i class='fas fa-check-circle'>")
 
             $('#terminal').html("*** Get UID success <i class='fas fa-check-circle'></i> UID: " + uniqueID + " ***\n" + $('#terminal').html())
         }
@@ -213,11 +224,12 @@
             $('#uniqueID').val('')
             uniqueID = null
 
-            $('#uniqueIDButton').removeClass("btn btn-success")
-            $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
+            $('#UIDStatus').html("<i class='fas fa-times-circle'>")
 
             $('#terminal').html("*** Get UID failed  <i class='fas fa-times-circle'></i> " + data.error + ": " + data.message + " ***\n" + $('#terminal').html())
         }
+
+        $('#uniqueIDButton').prop('disabled', false)
     })
 
 
@@ -229,7 +241,7 @@
 
     webapp_namespace.on('run_test_progress', (data) => {
         console.log(data)
-        
+
         if(data.message == '')
         {
             return
@@ -295,6 +307,8 @@
         $('#modulePicture').removeClass("grayed");
         $('#uniqueIDButton').prop('disabled', false);
 
+        $('#UIDStatus').html("<i class='fas fa-times-circle'>")
+
         handleUniqueID();
 
         $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
@@ -316,6 +330,8 @@
         $('#testButton').prop('disabled', true);
 
         $('#terminal').html("*** Module disconnected at: " + $('#time').html() + " <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
+
+        $('#UIDStatus').html("<i class='fas fa-times-circle'>")
 
         uniqueID = null;
         $('#uniqueID').val('')
