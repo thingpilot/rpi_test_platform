@@ -82,7 +82,7 @@
                 </div>
             </div>  
             <div class="col-sm-2">
-                <button class="btn btn-secondary" type="button" id="provisionButton" onclick="handleProvision()">
+                <button class="btn btn-primary" type="button" id="provisionButton" onclick="handleProvision()">
                     Provision
                 </button>
             </div>  
@@ -285,10 +285,16 @@
 
                 if(data.message.includes('success'))
                 {
+                    $('#testStatus').html("<i class='fas fa-check-circle'>")
+
                     if(provisionAfterTest)
                     {
                         handleProvision()
                     }
+                }
+                else if(data.message.includes('failed'))
+                {
+                    $('#testStatus').html("<i class='fas fa-times-circle'>")
                 }
             }
             else 
@@ -370,6 +376,15 @@
         if(data.message.includes('***'))
         {
             $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+
+            if(data.message.includes('success'))
+            {
+                $('#provisionStatus').html("<i class='fas fa-check-circle'>")
+            }
+            else if(data.message.includes('failed'))
+            {
+                $('#provisionStatus').html("<i class='fas fa-times-circle'>")
+            }
         }
         else 
         {
@@ -395,6 +410,8 @@
 
         $('#UIDStatus').html("<i class='fas fa-times-circle'>")
         $('#programStatus').html("<i class='fas fa-times-circle'>")
+        $('#testStatus').html("<i class='fas fa-times-circle'>")
+        $('#provisionStatus').html("<i class='fas fa-times-circle'>")
 
         handleUniqueID();
 
@@ -420,6 +437,8 @@
 
         $('#UIDStatus').html("<i class='fas fa-times-circle'>")
         $('#programStatus').html("<i class='fas fa-times-circle'>")
+        $('#testStatus').html("<i class='fas fa-times-circle'>")
+        $('#provisionStatus').html("<i class='fas fa-times-circle'>")
 
         uniqueID = null;
         $('#uniqueID').val('')
