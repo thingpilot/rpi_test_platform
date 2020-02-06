@@ -45,6 +45,15 @@ class HardwareTest():
         self.test_passed = True
         self.total_test_start_time = None
 
+    def _reset_test_passed_flag(func):
+        @functools.wraps(func)
+        def wrap(self, *args, **kwargs):
+            self.test_passed = True
+
+            return func(self, *args, **kwargs)
+
+        return wrap
+
     def _reset_timeout_flag(func):
         @functools.wraps(func)
         def wrap(self, *args, **kwargs):
@@ -215,6 +224,7 @@ class HardwareTest():
 
         return { 'success': True, 'message': f'*** Hardware test {result_string} Took: {total_test_time_taken}ms ***' }
 
+    @_reset_test_passed_flag
     def run_test(self, module):
         steps = { 
             'start_test': 'self.start_test(module)',

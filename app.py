@@ -68,9 +68,6 @@ class DeviceNamespace(Namespace):
     def on_run_test(self, module):
         self._can_test = False
 
-        if module is None:
-            socketio.emit('run_test_progress', { 'success': False, 'message': 'Select module', 'error': 'No module selected'}, namespace='/WebAppNamespace')
-
         socketio.emit('run_test', namespace='/STM32L0Namespace')
 
         start_time = time.time()
