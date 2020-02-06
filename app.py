@@ -36,10 +36,10 @@ class DeviceNamespace(Namespace):
         self._can_provision = False
 
     def on_connect(self):
-        print('Device Namespace connected')
+        pass
 
     def on_disconnect(self):
-        print('Device Namespace disconnected')
+        pass
     
     def on_get_unique_id(self):
         socketio.emit('get_unique_id', namespace='/STM32L0Namespace')
