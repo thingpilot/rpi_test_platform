@@ -31,27 +31,6 @@
         <p></p>
         <div class="row">
             <div class="col-sm-4">
-                <form method=post enctype=multipart/form-data id="firmwareUploadForm">
-                    <b>Select firmware:</b>
-                    <input type="file" id="firmwareUploadButton" accept=".bin" name=file onchange=handleFirmwareUpload(this.files)>
-                    <label class="btn btn-primary dropdown-toggle" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
-                </form>
-            </div>  
-            <div class="col-sm-2">
-                <button class="btn btn-primary" type="button" id="programButton" disabled onclick=handleProgram()>
-                    Program
-                </button>
-            </div> 
-            <div class="col-sm-1">
-                <label id="programStatus"><i class='fas fa-times-circle'></i></label>
-            </div> 
-            <div class="col-sm-5">
-                <label id="firmwareDateLabel">Modified: </label>
-            </div>
-        </div>
-        <p></p>
-        <div class="row">
-            <div class="col-sm-4">
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" id="uniqueID" rows="1" placeholder="STM32 Unique ID"></input>
                     <div class="input-group-append">
@@ -73,22 +52,22 @@
         <p></p>
         <div class="row">
             <div class="col-sm-4">
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" id="provisionURL" rows="1" placeholder="Provision URL"></input>
-                    <div class="input-group-append">
-                        <button id="provisionCopyButton" class="btn btn-secondary", type="button" onclick="copyToClipboard('#provisionURL')"><i class="far fa-copy"></i></button>
-                    </div>
-                </div>
+                <form method=post enctype=multipart/form-data id="firmwareUploadForm">
+                    <b>Select firmware:</b>
+                    <input type="file" id="firmwareUploadButton" accept=".bin" name=file onchange=handleFirmwareUpload(this.files)>
+                    <label class="btn btn-primary dropdown-toggle" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
+                </form>
             </div>  
             <div class="col-sm-2">
-                <button class="btn btn-primary" type="button" id="provisionButton" disabled onclick="handleProvision()">
-                    Provision
+                <button class="btn btn-primary" type="button" id="programButton" disabled onclick=handleProgram()>
+                    Program
                 </button>
-            </div>  
+            </div> 
             <div class="col-sm-1">
-                <label id="provisionStatus"><i class='fas fa-times-circle'></i></label>
-            </div>
+                <label id="programStatus"><i class='fas fa-times-circle'></i></label>
+            </div> 
             <div class="col-sm-5">
+                <label id="firmwareDateLabel">Modified: </label>
             </div>
         </div>
         <p></p>
@@ -114,6 +93,28 @@
             <div class="col-sm-5">           
             </div>
         </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="provisionURL" rows="1" placeholder="Provisioning Key"></input>
+                    <div class="input-group-append">
+                        <button id="provisionCopyButton" class="btn btn-secondary", type="button" onclick="copyToClipboard('#provisionURL')"><i class="far fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-primary" type="button" id="provisionButton" disabled onclick="handleProvision()">
+                    Provision
+                </button>
+            </div>  
+            <div class="col-sm-1">
+                <label id="provisionStatus"><i class='fas fa-times-circle'></i></label>
+            </div>
+            <div class="col-sm-5">
+            </div>
+        </div>
+        <p></p>
     </div>
     <p></p>
     <div class="card">
@@ -204,7 +205,9 @@
 
         disableButton('programButton')
 
-        $('#modulePicture').addClass("rotate")
+        $('#programStatus').html('<i class="fas fa-spinner"></i>')
+        $('#programStatus').addClass("rotate")
+
         $('#terminal').html("*** Programming " + fw_filename + " started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
 
         pgm_start_time = new Date().getTime()
@@ -234,11 +237,11 @@
             var pgm_end_time = new Date().getTime()
 
             $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
-            $('#modulePicture').removeClass("rotate")
 
             enableButton('programButton')
 
             $('#programStatus').html("<i class='fas fa-check-circle'>")
+            $('#programStatus').removeClass("rotate")
 
             if(testAfterProgram) {
                 handleTest()
@@ -256,6 +259,7 @@
             enableButton('programButton')
 
             $('#programStatus').html("<i class='fas fa-times-circle'>")
+            $('#programStatus').removeClass("rotate")
         }
     })
 
@@ -265,6 +269,9 @@
 
     const handleUniqueID = () => {
         device_namespace.emit('get_unique_id')
+
+        $('#UIDStatus').html('<i class="fas fa-spinner"></i>')
+        $('#UIDStatus').addClass("rotate")
 
         disableButton('uniqueIDButton')
     }
@@ -276,6 +283,7 @@
             uniqueID = data.message
 
             $('#UIDStatus').html("<i class='fas fa-check-circle'>")
+            $('#UIDStatus').removeClass("rotate")
 
             $('#terminal').html("*** Get UID success <i class='fas fa-check-circle'></i> UID: " + uniqueID + " ***\n" + $('#terminal').html())
         }
@@ -285,6 +293,7 @@
             uniqueID = null
 
             $('#UIDStatus').html("<i class='fas fa-times-circle'>")
+            $('#UIDStatus').removeClass("rotate")
 
             $('#terminal').html("*** Get UID failed  <i class='fas fa-times-circle'></i> " + data.error + ": " + data.message + " ***\n" + $('#terminal').html())
         }
@@ -299,6 +308,9 @@
     const handleTest = () => {
         $('#terminal').html("*** " + module.capitalize() + " hardware test started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
         disableButton('testButton')
+
+        $('#testStatus').html('<i class="fas fa-spinner"></i>')
+        $('#testStatus').addClass("rotate")
 
         device_namespace.emit('run_test', module)
     }
@@ -340,6 +352,7 @@
                 if(data.message.includes('success'))
                 {
                     $('#testStatus').html("<i class='fas fa-check-circle'>")
+                    $('#testStatus').removeClass("rotate")
 
                     if(provisionAfterTest)
                     {
@@ -349,6 +362,7 @@
                 else if(data.message.includes('failed'))
                 {
                     $('#testStatus').html("<i class='fas fa-times-circle'>")
+                    $('#testStatus').removeClass("rotate")
                 }
             }
             else 
@@ -404,6 +418,9 @@
             $('#terminal').html("*** " + module.capitalize() + " provisioning started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
             disableButton('provisionButton')
 
+            $('#provisionStatus').html('<i class="fas fa-spinner"></i>')
+            $('#provisionStatus').addClass("rotate")
+
             device_namespace.emit('run_provision', module, candidate_url, uniqueID)
         }
         else {
@@ -442,10 +459,12 @@
             if(data.message.includes('success'))
             {
                 $('#provisionStatus').html("<i class='fas fa-check-circle'>")
+                $('#provisionStatus').removeClass("rotate")
             }
             else if(data.message.includes('failed'))
             {
                 $('#provisionStatus').html("<i class='fas fa-times-circle'>")
+                $('#provisionStatus').removeClass("rotate")
             }
         }
         else 
