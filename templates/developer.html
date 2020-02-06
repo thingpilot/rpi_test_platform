@@ -184,8 +184,22 @@
         }
     }
 
+    const enableAllButtons = () => {
+        enableButton('programButton')
+        enableButton('uniqueIDButton')
+        enableButton('testButton')
+        enableButton('provisionButton')
+    }
+
     const disableButton = (button) => {
         $('#' + button).prop('disabled', true)
+    }
+
+    const disableAllButtons = () => {
+        disableButton('programButton')
+        disableButton('uniqueIDButton')
+        disableButton('testButton')
+        disableButton('provisionButton')
     }
 
     const copyToClipboard = (element) => {
@@ -202,8 +216,8 @@
 
     const handleProgram = () => {
         device_namespace.emit('program_bin', $('#firmwareUploadLabel').text())
-
-        disableButton('programButton')
+        
+        disableAllButtons()
 
         $('#programStatus').html('<i class="fas fa-spinner"></i>')
         $('#programStatus').addClass("rotate")
@@ -238,7 +252,7 @@
 
             $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
 
-            enableButton('programButton')
+            enableAllButtons()
 
             $('#programStatus').html("<i class='fas fa-check-circle'>")
             $('#programStatus').removeClass("rotate")
@@ -256,7 +270,7 @@
             
             $('#modulePicture').removeClass("rotate")
 
-            enableButton('programButton')
+            enableAllButtons()
 
             $('#programStatus').html("<i class='fas fa-times-circle'>")
             $('#programStatus').removeClass("rotate")
@@ -273,7 +287,7 @@
         $('#UIDStatus').html('<i class="fas fa-spinner"></i>')
         $('#UIDStatus').addClass("rotate")
 
-        disableButton('uniqueIDButton')
+        disableAllButtons()
     }
 
     webapp_namespace.on('get_unique_id_progress', (data) => {
@@ -298,7 +312,7 @@
             $('#terminal').html("*** Get UID failed  <i class='fas fa-times-circle'></i> " + data.error + ": " + data.message + " ***\n" + $('#terminal').html())
         }
 
-        enableButton('uniqueIDButton')
+        enableAllButtons()
     })
 
     /* UNIQUE ID END ****************************/
@@ -307,7 +321,7 @@
 
     const handleTest = () => {
         $('#terminal').html("*** " + module.capitalize() + " hardware test started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
-        disableButton('testButton')
+        disableAllButtons()
 
         $('#testStatus').html('<i class="fas fa-spinner"></i>')
         $('#testStatus').addClass("rotate")
@@ -347,7 +361,7 @@
             if(data.message.includes('***'))
             {
                 $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
-                enableButton('testButton')
+                enableAllButtons()
 
                 if(data.message.includes('success'))
                 {
@@ -372,7 +386,7 @@
                 if(data.message.includes('Failed to make target CPU run'))
                 {
                     $('#terminal').html("*** Hardware test failed <i class='fas fa-times-circle'></i> ***\r\n" + $('#terminal').html())
-                    enableButton('testButton')
+                    enableAllButtons()
                 }          
             }      
         }      
@@ -416,7 +430,7 @@
 
         if(uniqueID != null) {
             $('#terminal').html("*** " + module.capitalize() + " provisioning started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
-            disableButton('provisionButton')
+            disableAllButtons()
 
             $('#provisionStatus').html('<i class="fas fa-spinner"></i>')
             $('#provisionStatus').addClass("rotate")
@@ -454,7 +468,7 @@
         if(data.message.includes('***'))
         {
             $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
-            enableButton('provisionButton')
+            enableAllButtons()
 
             if(data.message.includes('success'))
             {
@@ -474,7 +488,7 @@
             if(data.message.includes('Failed to make target CPU run'))
             {
                 $('#terminal').html("*** Provisioning failed <i class='fas fa-times-circle'></i> ***\r\n" + $('#terminal').html())
-                enableButton('provisionButton')
+                enableAllButtons()
             }
         }       
     })
@@ -505,19 +519,13 @@
 
         $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
 
-        enableButton('programButton')
-        enableButton('uniqueIDButton')
-        enableButton('testButton')
-        enableButton('provisionButton')
+        enableAllButtons()
     })
 
     socket.on('js_module_not_present', () => {
         connected = false
 
-        disableButton('programButton')
-        disableButton('uniqueIDButton')
-        disableButton('testButton')
-        disableButton('provisionButton')
+        disableAllButtons()
 
         $('#terminal').html("*** Module disconnected at: " + $('#time').html() + " <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
 
@@ -550,17 +558,11 @@
             $('#moduleSelectButton').text("Module");
             $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-primary dropdown-toggle")
 
-            disableButton('programButton')
-            disableButton('uniqueIDButton')
-            disableButton('testButton')
-            disableButton('provisionButton')
+            disableAllButtons()
         }
         else 
         {
-            enableButton('programButton')
-            enableButton('uniqueIDButton')
-            enableButton('testButton')
-            enableButton('provisionButton') 
+            enableAllButtons()
             
             $('#moduleSelectButton').text(name.getAttribute("data-name"))
             $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle")
