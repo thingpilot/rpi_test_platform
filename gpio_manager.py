@@ -8,13 +8,12 @@
 
 # Standard library imports
 import atexit, datetime, time
+from subprocess import check_output
 
 # 3rd-party library imports
 import RPi.GPIO as gpio
 import socketio
 
-# Thingpilot library imports
-import app_utils
 
 # GPIO definitions
 DETECT_PIN = 1
@@ -49,6 +48,14 @@ def handle_shutdown():
     exit_handler()
 
 
+def get_ip_address():
+    ip = check_output(['hostname', '-I'])
+    ip = ip.split()[0]
+    ip = ip.decode('utf-8')
+
+    return ip
+
+
 if __name__ == "__main__":
     atexit.register(exit_handler)
     connected = False
@@ -56,10 +63,10 @@ if __name__ == "__main__":
     print(f"{datetime.datetime.now()} gpio_manager.py: Intialising GPIO pin management interface")
 
     for i in range(1, 10):
-        print(f"{datetime.datetime.now()} gpio_manager.py: Attempt {i} connecting to {app_utils.get_ip_address()}:80")
+        print(f"{datetime.datetime.now()} gpio_manager.py: Attempt {i} connecting to {get_ip_address()}:80")
         
         try:    
-            sio.connect(f"http://{app_utils.get_ip_address()}:80")
+            sio.connect(f"http://{get_ip_address()}:80")
             connected = True
             break
         except socketio.exceptions.ConnectionError:
@@ -96,4 +103,4 @@ if __name__ == "__main__":
             pass
     
     else:
-        print(f"{datetime.datetime.now()} gpio_manager.py: Failed to connect to {app_utils.get_ip_address()}:80. Server is down?")
+        print(f"{datetime.datetime.now()} gpio_manager.py: Failed to connect to {get_ip_address()}:80. Server is down?")

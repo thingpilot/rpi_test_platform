@@ -8,16 +8,13 @@
 # Standard library imports
 import atexit, datetime, requests, subprocess, time
 from os import urandom, path, getcwd
+from subprocess import check_output
 
 # 3rd-party library imports
 import eventlet
 from flask import Flask, render_template, request, Response
 from flask_socketio import Namespace, SocketIO
 from werkzeug.utils import secure_filename
-
-# Thingpilot library imports
-import app_utils
-from module_provision import provision
 
 
 # Global Flask and SocketIO objects
@@ -167,12 +164,20 @@ def exit_handler():
     exit()
 
 
+def get_ip_address():
+    ip = check_output(['hostname', '-I'])
+    ip = ip.split()[0]
+    ip = ip.decode('utf-8')
+
+    return ip
+
+
 if __name__ == '__main__':
     atexit.register(exit_handler)
 
     socketio.on_namespace(DeviceNamespace('/DeviceNamespace'))
 
     try:      
-        socketio.run(app, host=app_utils.get_ip_address(), port=80, debug=True)
+        socketio.run(app, host=get_ip_address(), port=80, debug=True)
     except KeyboardInterrupt:
         sys.exit()
