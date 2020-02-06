@@ -145,12 +145,23 @@
     var uniqueID = null;
     var connected = false;
 
+    function enableButton(button) {
+        if(module != null && connected)
+        {
+            $('#' + button).prop('disabled', false)
+        }
+    }
+
+    function disableButton(button) {
+        $('#' + button).prop('disabled', true)
+    }
+
     /* PROGRAM **********************************/
 
     function handleProgram() {
         device_namespace.emit('program_bin', $('#firmwareUploadLabel').text())
 
-        $('#programButton').prop('disabled', true);
+        disableButton('programButton')
 
         $('#modulePicture').addClass("rotate")
         $('#terminal').html("*** Programming " + fw_filename + " started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
@@ -184,7 +195,7 @@
             $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
             $('#modulePicture').removeClass("rotate")
 
-            $('#programButton').prop('disabled', false)
+            enableButton('programButton')
 
             $('#programStatus').html("<i class='fas fa-check-circle'>")
 
@@ -201,7 +212,7 @@
             
             $('#modulePicture').removeClass("rotate")
 
-            $('#programButton').prop('disabled', false)
+            enableButton('programButton')
 
             $('#programStatus').html("<i class='fas fa-times-circle'>")
         }
@@ -214,7 +225,7 @@
     function handleUniqueID(){
         device_namespace.emit('get_unique_id')
 
-        $('#uniqueIDButton').prop('disabled', true)
+        disableButton('uniqueIDButton')
     }
 
     webapp_namespace.on('get_unique_id_progress', (data) => {
@@ -237,7 +248,7 @@
             $('#terminal').html("*** Get UID failed  <i class='fas fa-times-circle'></i> " + data.error + ": " + data.message + " ***\n" + $('#terminal').html())
         }
 
-        $('#uniqueIDButton').prop('disabled', false)
+        enableButton('uniqueIDButton')
     })
 
     /* UNIQUE ID END ****************************/
@@ -246,6 +257,7 @@
 
     function handleTest() {
         $('#terminal').html("*** " + module.capitalize() + " hardware test started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+        disableButton('testButton')
 
         device_namespace.emit('run_test', module)
     }
@@ -282,6 +294,7 @@
             if(data.message.includes('***'))
             {
                 $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+                enableButton('testButton')
 
                 if(data.message.includes('success'))
                 {
@@ -300,6 +313,12 @@
             else 
             {
                 $('#terminal').html('    ' + data.message + "\r\n" + $('#terminal').html())
+
+                if(data.message.includes('Failed to make target CPU run'))
+                {
+                    $('#terminal').html("*** Hardware test failed <i class='fas fa-times-circle'></i> ***\r\n" + $('#terminal').html())
+                    enableButton('testButton')
+                }          
             }      
         }      
     })
@@ -342,6 +361,7 @@
 
         if(uniqueID != null) {
             $('#terminal').html("*** " + module.capitalize() + " provisioning started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+            disableButton('provisionButton')
 
             device_namespace.emit('run_provision', module, candidate_url, uniqueID)
         }
@@ -376,6 +396,7 @@
         if(data.message.includes('***'))
         {
             $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+            enableButton('provisionButton')
 
             if(data.message.includes('success'))
             {
@@ -389,6 +410,12 @@
         else 
         {
             $('#terminal').html('    ' + data.message + "\r\n" + $('#terminal').html())
+
+            if(data.message.includes('Failed to make target CPU run'))
+            {
+                $('#terminal').html("*** Provisioning failed <i class='fas fa-times-circle'></i> ***\r\n" + $('#terminal').html())
+                enableButton('provisionButton')
+            }
         }       
     })
 
@@ -406,7 +433,8 @@
         connected = true;
 
         $('#modulePicture').removeClass("grayed");
-        $('#uniqueIDButton').prop('disabled', false);
+
+        
 
         $('#UIDStatus').html("<i class='fas fa-times-circle'>")
         $('#programStatus').html("<i class='fas fa-times-circle'>")
@@ -421,17 +449,19 @@
             $('#programButton').prop('disabled', false);
         }
 
-        if(module != null) {
-            $('#testButton').prop('disabled', false);
-        }
+        enableButton('programButton')
+        enableButton('uniqueIDButton')
+        enableButton('testButton')
+        enableButton('provisionButton')
     });
 
     socket.on('js_module_not_present', function() {
         connected = false;
 
-        $('#programButton').prop('disabled', true);
-        $('#uniqueIDButton').prop('disabled', true);
-        $('#testButton').prop('disabled', true);
+        disableButton('programButton')
+        disableButton('uniqueIDButton')
+        disableButton('testButton')
+        disableButton('provisionButton')
 
         $('#terminal').html("*** Module disconnected at: " + $('#time').html() + " <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
 
@@ -473,13 +503,17 @@
             $('#moduleSelectButton').text("Module");
             $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-primary dropdown-toggle");
 
-            $('#testButton').prop('disabled', true);
+            disableButton('programButton')
+            disableButton('uniqueIDButton')
+            disableButton('testButton')
+            disableButton('provisionButton')
         }
         else 
         {
-            if(connected == true) {
-                $('#testButton').prop('disabled', false);
-            }    
+            enableButton('programButton')
+            enableButton('uniqueIDButton')
+            enableButton('testButton')
+            enableButton('provisionButton') 
             
             $('#moduleSelectButton').text(name.getAttribute("data-name"));
             $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle");
@@ -507,25 +541,18 @@
                 
             },
             success: function(data) {
-                $('#firmwareUploadLabel').removeClass("btn btn-danger");
-                $('#firmwareUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-success");
                 $('#firmwareUploadLabel').text(filename);
                 $('#firmwareDateLabel').text("Modified: " + date);
 
-                $('#programButton').prop('disabled', false);
-                $('#programButton').removeClass("btn btn-success")
-                $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary");
+                enableButton('programButton')
 
                 var upload_date = new Date().toLocaleString();
             },
             error: function(data) {
-                $('#firmwareUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
                 $('#firmwareUploadLabel').text("Invalid");
                 $('#firmwareDateLabel').text("Modified: ");
 
-                $('#programButton').prop('disabled', true);
-                $('#programButton').removeClass("btn btn-success")
-                $('#programButton').removeClass("btn btn-primary").addClass("btn btn-secondary");
+                disableButton('programButton')
 
                 var upload_date = new Date().toLocaleString();
 
