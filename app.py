@@ -11,14 +11,12 @@ from os import urandom, path, getcwd
 
 # 3rd-party library imports
 import eventlet
-import RPi.GPIO as gpio
 from flask import Flask, render_template, request, Response
 from flask_socketio import Namespace, SocketIO
 from werkzeug.utils import secure_filename
 
 # Thingpilot library imports
 import app_utils
-from module_tests import hardware_test
 from module_provision import provision
 
 
@@ -90,9 +88,7 @@ class DeviceNamespace(Namespace):
         if 'Target CPU running' in data['message']:
             self._can_test = True 
 
-        socketio.emit('run_test_progress', data, namespace='/WebAppNamespace')
-        print(f'RUN TEST PROG: {data}')
-            
+        socketio.emit('run_test_progress', data, namespace='/WebAppNamespace')  
         
 
 @app.route('/')
@@ -145,71 +141,6 @@ def is_module_present():
     socketio.emit('IS_MODULE_PRESENT')
 
 
-def programming_success_cb():
-    print('success callback')
-
-
-@socketio.on('start_programming')
-def start_programming(filename):
-    socketio.emit('js_programming_started')
-    output_list = list()
-    error = False
-
-    """
-    with stm32l0.STM32L0() as cpu:
-        print('with cpu')
-        if cpu:
-            print('if cpu')
-            for result in cpu.program_bin(filename, stm32l0.STM32L0.PGM_START_ADDRESS):
-                print(result)
-                if result['success']:
-                    if result['message'] != '':
-                        if 'enabled\nwrote' in result['message']:
-                            messages = result['message'].split('\n')
-                            
-                            for i in messages[0:2]:
-                                output_list.append(f'    {i}\n')
-                        else: 
-                            output_list.append(f'    {result["message"]}')
-                else:
-                    output_list.append(f'    Message: {result["message"]} Error: {result["error"]}\n')
-                    error = True
-                    break
-
-            for message in output_list:     
-                socketio.emit('js_programming_progress', message)
-
-            if error:
-                print('Error here')
-                socketio.emit('js_programming_error', output_list[-1])
-            else:
-                print('Error there')
-                socketio.emit('js_programming_success', callback=programming_success_cb)
-                print('We did succeed')
-        else:
-            print('Error everywhere')
-            socketio.emit('js_programming_progress', '    Failed to connect to Tcl server\n')
-            socketio.emit('js_programming_error', 'Failed to connect to Tcl server\n')
-    """
-
-
-#@socketio.on('get_unique_id')
-def get_device_id():
-    pass
-    """
-    with stm32l0.STM32L0() as cpu:
-        if cpu:
-            result = cpu.get_unique_id()
-
-            if result['success']:
-                socketio.emit('js_get_unique_id_success', result['message'])
-            else:
-                socketio.emit('js_get_unique_id_fail', f'Message: {result["message"]} Error: {result["error"]}\n')
-        else:
-            socketio.emit('js_get_unique_id_fail', f'Failed to connect to Tcl server\n')
-    """
-
-
 @socketio.on('start_provision')
 def start_provision(module, url, uid):
     if module is None or url is None or uid is None:
@@ -236,9 +167,6 @@ def start_provision(module, url, uid):
     for result in prov.provision():
         socketio.emit('js_programming_progress', result['message'])
     """
-
-
-
 
 
 def exit_handler():
