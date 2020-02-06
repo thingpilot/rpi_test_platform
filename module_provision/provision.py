@@ -32,8 +32,17 @@ class ThingpilotProvisioner():
 
         self.uart = None
         self.timeout_flag = False
-        self.test_passed = True
-        self.total_prov_start_time = self._get_millis()
+        self.prov_passed = True
+        self.total_prov_start_time = None
+
+    def _reset_prov_passed_flag(func):
+        @functools.wraps(func)
+        def wrap(self, *args, **kwargs):
+            self.prov_passed = True
+
+            return func(self, *args, **kwargs)
+
+        return wrap
 
     def _reset_timeout_flag(func):
         @functools.wraps(func)
@@ -58,21 +67,21 @@ class ThingpilotProvisioner():
         return int(round(time.time() * 1000))
 
     def start_provision(self):
-        date_time = datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S")
-        return { 'success': True, 'message': f'*** Beginning {self.module.title()} provisioning at: {date_time} ***\n' }
+        self.total_prov_start_time = self._get_millis()
+        return { 'success': True, 'message': '' }
 
     @_reset_timeout_flag
     def initialise_device(self):
         try:
             self.uart = serial.Serial('/dev/serial0', 9600, timeout=0.2)
         except serial.serialutil.SerialException:
-            return { 'success': False, 'message': '    Provision (init) - Failed to connect to port /dev/serial0\n'}
+            return { 'success': False, 'message': 'Failed to connect to port /dev/serial0\n'}
 
         if not self.uart.is_open:
             self.uart.open()
 
         if not self.uart.is_open:
-            return { 'success': False, 'message': '    Provision (init) - Failed to open port /dev/serial0\n'}
+            return { 'success': False, 'message': 'Failed to open port /dev/serial0\n'}
 
         start_time = self._get_millis()
 
@@ -92,9 +101,9 @@ class ThingpilotProvisioner():
                 break
         
         if self.timeout_flag:
-            return { 'success': False, 'message': '    Provision (init) - Failed to place module into provisioning mode\n'}
+            return { 'success': False, 'message': 'Failed to place module into provisioning mode'}
                     
-        return { 'success': True, 'message': '    Provision (init) - Module successfully placed into provisioning mode\n'}
+        return { 'success': True, 'message': 'Module successfully placed into provisioning mode'}
 
     @_flush_uart_input_buffer
     @_reset_timeout_flag
@@ -119,9 +128,9 @@ class ThingpilotProvisioner():
         
         """
         if self.timeout_flag:
-            return { 'success': False, 'message': '    Provision (init) - Failed to place module into provisioning mode\n'}
+            return { 'success': False, 'message': 'Failed to place module into provisioning mode'}
                     
-        return { 'success': True, 'message': '    Provision (init) - Module successfully placed into provisioning mode\n'}
+        return { 'success': True, 'message': 'Did some actual provisioning, I swear'}
 
     @_flush_uart_input_buffer
     @_reset_timeout_flag
@@ -144,15 +153,16 @@ class ThingpilotProvisioner():
         if self.uart.is_open:
             self.uart.close()
 
-        if self.test_passed:
-            result_string = 'PROVISIONED <i class="fas fa-check-circle"></i>'
+        if self.prov_passed:
+            result_string = 'success <i class="fas fa-check-circle"></i>'
         else:
-            result_string = 'FAILED <i class="fas fa-times-circle"></i>'
+            result_string = 'failed <i class="fas fa-times-circle"></i>'
 
         total_prov_time_taken = self._get_millis() - self.total_prov_start_time
 
-        return { 'success': True, 'message': f'*** Ended {self.module.title()} provisioning. Took: {total_prov_time_taken}ms ***\n    Provisioning - {result_string}\n' }
+        return { 'success': self.prov_passed, 'message': f'*** Provisioning {result_string} Took: {total_prov_time_taken}ms ***' }
 
+    @_reset_prov_passed_flag
     def provision(self):
         steps = { 
             'start_provision': 'self.start_provision()',

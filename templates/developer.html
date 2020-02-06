@@ -327,6 +327,8 @@
         var candidate_url = $('#provisionURL')[0].value
 
         if(uniqueID != null) {
+            $('#terminal').html("*** " + module.capitalize() + " provisioning started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+
             device_namespace.emit('run_provision', module, candidate_url, uniqueID)
         }
         else {
@@ -351,7 +353,20 @@
 
     webapp_namespace.on('run_provision_progress', (data) =>{
         console.log(data)
-        $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+
+        if(data.message == '')
+        {
+            return
+        }
+
+        if(data.message.includes('***'))
+        {
+            $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+        }
+        else 
+        {
+            $('#terminal').html('    ' + data.message + "\r\n" + $('#terminal').html())
+        }       
     })
 
     /* PROVISION END ****************************/

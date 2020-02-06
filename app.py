@@ -102,11 +102,9 @@ class DeviceNamespace(Namespace):
                 socketio.emit('run_provision_progress', { 'success': False, 'message': 'Failed to place target CPU into control mode', 'error': 'Timeout'}, namespace='/WebAppNamespace')
         
         if self._can_provision:
-            print('self can provision')
             socketio.emit('run_provision', (module, url, uid), namespace='/ProvisionerNamespace')
 
     def on_run_provision_progress(self, data):
-        print(f'data here {data}')
         if 'Target CPU running' in data['message']:
             self._can_provision = True 
 
@@ -161,34 +159,6 @@ def module_not_present():
 @socketio.on('is_module_present')
 def is_module_present():
     socketio.emit('IS_MODULE_PRESENT')
-
-
-@socketio.on('start_provision')
-def start_provision(module, url, uid):
-    if module is None or url is None or uid is None:
-        return Response(status=400)
-
-    print('starting provision')
-    data = { "provisionSession": url, "processorId": uid }
-    r = requests.post('http://192.168.1.197:3030/devices', json=data)
-    print(r)
-
-    """
-    with stm32l0.STM32L0() as cpu:
-        if cpu:
-            cpu.init()
-            cpu.reset_run()
-        else:
-            socketio.emit('js_fail_init_cpu_provision')
-            return Response(status=500)
-
-    prov = provision.ThingpilotProvisioner(module.lower(), url, uid)
-
-    prov_bool = False
-
-    for result in prov.provision():
-        socketio.emit('js_programming_progress', result['message'])
-    """
 
 
 def exit_handler():

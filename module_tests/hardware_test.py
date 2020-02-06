@@ -222,7 +222,7 @@ class HardwareTest():
 
         total_test_time_taken = self._get_millis() - self.total_test_start_time
 
-        return { 'success': True, 'message': f'*** Hardware test {result_string} Took: {total_test_time_taken}ms ***' }
+        return { 'success': self.test_passed, 'message': f'*** Hardware test {result_string} Took: {total_test_time_taken}ms ***' }
 
     @_reset_test_passed_flag
     def run_test(self, module):
