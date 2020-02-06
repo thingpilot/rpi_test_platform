@@ -185,6 +185,8 @@
 
             $('#programButton').prop('disabled', false)
 
+            $('#programStatus').html("<i class='fas fa-check-circle'>")
+
             if(testAfterProgram) {
                 handleTest()
             }
@@ -199,6 +201,8 @@
             $('#modulePicture').removeClass("rotate")
 
             $('#programButton').prop('disabled', false)
+
+            $('#programStatus').html("<i class='fas fa-times-circle'>")
         }
     })
 
@@ -308,6 +312,7 @@
         $('#uniqueIDButton').prop('disabled', false);
 
         $('#UIDStatus').html("<i class='fas fa-times-circle'>")
+        $('#programStatus').html("<i class='fas fa-times-circle'>")
 
         handleUniqueID();
 
@@ -332,6 +337,7 @@
         $('#terminal').html("*** Module disconnected at: " + $('#time').html() + " <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
 
         $('#UIDStatus').html("<i class='fas fa-times-circle'>")
+        $('#programStatus').html("<i class='fas fa-times-circle'>")
 
         uniqueID = null;
         $('#uniqueID').val('')
