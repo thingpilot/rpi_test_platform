@@ -8,13 +8,12 @@
 """
 
 # Standard library imports
-import functools
-import time
-from datetime import datetime
+import datetime, functools, time
+from subprocess import check_output
 
 # 3rd-party library imports
 import RPi.GPIO as gpio
-import serial
+import serial, socketio
 
 # Thingpilot library imports
 if __name__ == '__main__':
@@ -23,8 +22,7 @@ else:
     from module_tests import pinmap
 
 
-class TimeoutError(Exception): 
-    pass
+sio = socketio.Client()
 
 
 class TestCommands():
@@ -39,20 +37,13 @@ class HardwareTest():
     EARHART = 'earhart'
     WRIGHT = 'wright'
 
-    def __init__(self, module):
-        self.module = module
-
-        if self.module == HardwareTest.EARHART:
-            self.pinmap = pinmap.earhart
-        elif self.module == HardwareTest.WRIGHT:
-            self.pinmap = pinmap.wright
-        else:
-            self.pinmap = None
-
+    def __init__(self):
+        self.module = None
+        self.pinmap = None
         self.uart = None
         self.timeout_flag = False
         self.test_passed = True
-        self.total_test_start_time = self._get_millis()
+        self.total_test_start_time = None
 
     def _reset_timeout_flag(func):
         @functools.wraps(func)
@@ -76,39 +67,52 @@ class HardwareTest():
     def _get_millis(self):
         return int(round(time.time() * 1000))
 
-    def start_test(self):
-        date_time = datetime.now().strftime("%a, %d %b %Y %H:%M:%S")
-        return { 'success': True, 'message': f'*** Beginning {self.module.title()} hardware test at: {date_time} ***\n' }
+    def set_module(self, module):
+        self.module = module
+
+        if self.module == HardwareTest.EARHART:
+            self.pinmap = pinmap.earhart
+        elif self.module == HardwareTest.WRIGHT:
+            self.pinmap = pinmap.wright
+        else:
+            self.pinmap = None
+
+    def start_test(self, module):
+        self.set_module(module)
+        self.total_test_start_time = self._get_millis()
+
+        return { 'success': True, 'message': '' }
 
     def verify_pinmap(self):
+        print('VERIFY PINMAP')
         if self.pinmap is None:
-            return { 'success': False, 'message': '    HW Test (init) - Unknown module selected\n'}
+            return { 'success': False, 'message': 'Unknown module selected'}
 
-        return { 'success': True, 'message': f'    HW Test (init) - Successfully loaded pin mapping for {self.module.title()}\n'}
+        return { 'success': True, 'message': f'Successfully loaded pin mapping for {self.module.title()}'}
 
     @_reset_timeout_flag
     def initialise_device(self):
         try:
             self.uart = serial.Serial('/dev/serial0', 9600, timeout=0.2)
         except serial.serialutil.SerialException:
-            return { 'success': False, 'message': '    HW Test (init) - Failed to connect to port /dev/serial0\n'}
+            return { 'success': False, 'message': 'Failed to connect to port /dev/serial0'}
 
         if not self.uart.is_open:
             self.uart.open()
 
         if not self.uart.is_open:
-            return { 'success': False, 'message': '    HW Test (init) - Failed to open port /dev/serial0\n'}
+            return { 'success': False, 'message': 'Failed to open port /dev/serial0'}
 
         start_time = self._get_millis()
 
         while True:
             s = str(self.uart.readline())
-            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
+            print(f"{datetime.datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
 
             if TestCommands.CTRL in s:
                 self.uart.write(bytes(TestCommands.TEST_INIT, 'utf-8'))
                 self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
-                print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
+                print(f"{datetime.datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
                 break
 
             if self._get_millis() > (start_time + 1000):
@@ -116,12 +120,12 @@ class HardwareTest():
                 break
         
         if self.timeout_flag:
-            return { 'success': False, 'message': '    HW Test (init) - Failed to place DUT into test mode\n'}
+            return { 'success': False, 'message': 'Failed to place DUT into test mode'}
                     
-        return { 'success': True, 'message': '    HW Test (init) - DUT successfully placed into test mode\n'}
+        return { 'success': True, 'message': 'DUT successfully placed into test mode'}
 
     def start_test_gpio(self):
-        return { 'success': True, 'message': '    HW Test (GPIO) - Starting GPIO test\n'}
+        return { 'success': True, 'message': 'Starting GPIO test'}
 
     def _toggle_test_gpio(self, cpu_pin, rpi_pin, expected_pin_state):
         gpio.setmode(gpio.BCM)
@@ -129,19 +133,19 @@ class HardwareTest():
         test_passed = False
 
         self.uart.write(bytes(f'{TestCommands.TEST_GPIO}{cpu_pin},{expected_pin_state}', 'utf-8'))
-        print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_GPIO}{cpu_pin},{expected_pin_state}")
+        print(f"{datetime.datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_GPIO}{cpu_pin},{expected_pin_state}")
         start_time = self._get_millis()
 
         while True: 
             result = str(self.uart.readline())
-            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {result}")
+            print(f"{datetime.datetime.now()} hardware_test.py: ({self.module.title()}) received: {result}")
 
             if f'GPIO: {cpu_pin}, {expected_pin_state}' in result:
                 actual_pin_state = gpio.input(rpi_pin)
 
                 if actual_pin_state == expected_pin_state:
                     self.uart.write(bytes(TestCommands.ACK, 'utf-8'))
-                    print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
+                    print(f"{datetime.datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.ACK}")
                     test_passed = True
                     break
             
@@ -180,6 +184,7 @@ class HardwareTest():
 
         return { 'success': test_passed, 'message': 'GPIO', 'results': test_results }
 
+
     @_flush_uart_input_buffer
     @_reset_timeout_flag
     def end_test(self):
@@ -187,10 +192,10 @@ class HardwareTest():
 
         while True:
             self.uart.write(bytes(TestCommands.TEST_END, 'utf-8'))
-            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_END}")
+            print(f"{datetime.datetime.now()} hardware_test.py: ({self.module.title()}) sent: {TestCommands.TEST_END}")
 
             s = str(self.uart.readline())
-            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
+            print(f"{datetime.datetime.now()} hardware_test.py: ({self.module.title()}) received: {s}")
 
             if TestCommands.ACK in s:
                 break
@@ -202,17 +207,17 @@ class HardwareTest():
             self.uart.close()
 
         if self.test_passed:
-            result_string = 'PASSED <i class="fas fa-check-circle"></i>'
+            result_string = 'success <i class="fas fa-check-circle"></i>'
         else:
-            result_string = 'FAILED <i class="fas fa-times-circle"></i>'
+            result_string = 'failed <i class="fas fa-times-circle"></i>'
 
         total_test_time_taken = self._get_millis() - self.total_test_start_time
 
-        return { 'success': True, 'message': f'*** Ended {self.module.title()} hardware test. Took: {total_test_time_taken}ms ***\n    HW Test - {result_string}\n' }
+        return { 'success': True, 'message': f'*** Hardware test {result_string} Took: {total_test_time_taken}ms ***' }
 
-    def run_test(self):
+    def run_test(self, module):
         steps = { 
-            'start_test': 'self.start_test()',
+            'start_test': 'self.start_test(module)',
             'verify_pinmap': 'self.verify_pinmap()',
             'initialise_device': 'self.initialise_device()',
             'start_test_gpio': 'self.start_test_gpio()',
@@ -221,7 +226,7 @@ class HardwareTest():
         }
 
         for step, func in steps.items():
-            print(f"{datetime.now()} hardware_test.py: ({self.module.title()}) {step}")
+            print(f"{datetime.datetime.now()} hardware_test.py: ({module.title()}) {step}")
 
             result = eval(func)
             yield result
@@ -230,3 +235,63 @@ class HardwareTest():
                 self.test_passed = False
                 yield self.end_test()
                 break
+
+
+class HWTestNamespace(socketio.ClientNamespace):
+    def __init__(self, hw_test, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.sio_connected = False
+
+        self._hw_test = hw_test
+
+    def on_connect(self):
+        self.sio_connected = True
+
+    def on_disconnect(self):
+        self.sio_connected = False
+
+    def on_run_test(self, module):
+        for result in self._hw_test.run_test(module):
+            sio.emit('run_test_progress', result, namespace='/DeviceNamespace')
+            sio.sleep(0.2)
+
+
+def get_ip_address():
+    ip = check_output(['hostname', '-I'])
+    ip = ip.split()[0]
+    ip = ip.decode('utf-8')
+
+    return ip
+
+
+def connect(n_attempts=100):
+    ns = HWTestNamespace(HardwareTest(), '/HWTestNamespace')
+    sio.register_namespace(ns)
+
+    for i in range(n_attempts):
+        print(f"{datetime.datetime.now()} hardware_test.py: Attempt {i + 1} connecting to {get_ip_address()}:80")
+
+        try:
+            sio.connect(f'http://{get_ip_address()}:80')       
+
+            print(f"{datetime.datetime.now()} hardware_test.py: Connected to {get_ip_address()}:80")
+
+            break
+        except socketio.exceptions.ConnectionError:
+            sio.sleep(0.1)
+
+    if ns.sio_connected:
+        sio.sleep(10)
+
+    sio.sleep(1)
+
+    return ns.sio_connected
+
+
+if __name__ == '__main__':
+    if connect():
+        while True:
+            sio.sleep(1)
+    else:
+        print(f"{datetime.datetime.now()} hardware_test.py: Failed to connect to {get_ip_address()}:80")

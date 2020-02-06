@@ -19,7 +19,6 @@ import socketio
 
 
 sio = socketio.Client()
-sio_connected = False
 
 
 class MutexLockedError(Exception):
@@ -136,8 +135,12 @@ class STM32L0Namespace(socketio.ClientNamespace):
     @_mutex_use_cpu
     def on_program_bin(self, binary):
         for result in self._cpu.program_bin(binary, STM32L0.PGM_START_ADDRESS):
-            print(result)
             sio.emit('program_bin_progress', result, namespace='/DeviceNamespace')
+
+    @_mutex_use_cpu
+    def on_run_test(self, data):
+        sio.emit('run_test_progress', self._cpu.init(), namespace='/DeviceNamespace')
+        sio.emit('run_test_progress', self._cpu.reset_run(), namespace='/DeviceNamespace')
 
 
 def get_ip_address():
@@ -167,12 +170,21 @@ def connect(n_attempts=100):
     if ns.sio_connected:
         sio.sleep(10)
 
+    sio.sleep(1)
+
     return ns.sio_connected
 
 
 if __name__ == '__main__':
     if connect():
+        for i in range(10):
+            print('STM OH YES OH YES')
+
         while True:
             sio.sleep(1)
     else:
         print(f"{datetime.datetime.now()} stm32l0.py: Failed to connect to {get_ip_address()}:80")
+        for i in range(10):
+            print('STM OH NO OH NO')
+
+

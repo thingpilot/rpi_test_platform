@@ -6,7 +6,7 @@
 """
 
 # Standard library imports
-import atexit, datetime, requests, subprocess
+import atexit, datetime, requests, subprocess, time
 from os import urandom, path, getcwd
 
 # 3rd-party library imports
@@ -18,7 +18,6 @@ from werkzeug.utils import secure_filename
 
 # Thingpilot library imports
 import app_utils
-#from python_ocd.targets import stm32l0
 from module_tests import hardware_test
 from module_provision import provision
 
@@ -34,10 +33,11 @@ app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
 socketio = SocketIO(app, async_mode='eventlet', logger=True)
 
 
-
 class DeviceNamespace(Namespace):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self._can_test = False
 
     def on_connect(self):
         print('Device Namespace connected')
@@ -55,8 +55,45 @@ class DeviceNamespace(Namespace):
         socketio.emit('program_bin', binary, namespace='/STM32L0Namespace')
 
     def on_program_bin_progress(self, data):
-        socketio.emit('program_bin_progress', data, namespace='/WebAppNamespace')
+        if data['message'] != '':
+            if 'enabled\nwrote' in data['message']:
+                messages = data['message'].split('\n')
 
+                for msg in messages[0:2]:
+                    socketio.emit('program_bin_progress', { 'success': True, 'message': msg, 'error': ''}, namespace='/WebAppNamespace')
+            elif 'verified' in data['message']:
+                msg = data['message'].split('\n')[0]
+                socketio.emit('program_bin_progress', { 'success': True, 'message': msg, 'error': ''}, namespace='/WebAppNamespace')
+            else:
+                socketio.emit('program_bin_progress', data, namespace='/WebAppNamespace')
+
+    def on_run_test(self, module):
+        self._can_test = False
+
+        if module is None:
+            socketio.emit('run_test_progress', { 'success': False, 'message': 'Select module', 'error': 'No module selected'}, namespace='/WebAppNamespace')
+
+        socketio.emit('run_test', namespace='/STM32L0Namespace')
+
+        start_time = time.time()
+
+        while not self._can_test:
+            socketio.sleep(0.1)
+
+            if time.time() > (start_time + 1000):
+                socketio.emit('run_test_progress', { 'success': False, 'message': 'Failed to place target CPU into control mode', 'error': 'Timeout'}, namespace='/WebAppNamespace')
+
+        if self._can_test:
+            socketio.emit('run_test', module.lower(), namespace='/HWTestNamespace')
+
+    def on_run_test_progress(self, data):
+        if 'Target CPU running' in data['message']:
+            self._can_test = True 
+
+        socketio.emit('run_test_progress', data, namespace='/WebAppNamespace')
+        print(f'RUN TEST PROG: {data}')
+            
+        
 
 @app.route('/')
 def home():
@@ -201,61 +238,7 @@ def start_provision(module, url, uid):
     """
 
 
-@socketio.on('begin_test')
-def begin_test(module):
-    if module is None:
-        return Response(status=400)
 
-    """
-    with stm32l0.STM32L0() as cpu:
-        if cpu:
-            cpu.init()
-            cpu.reset_run()
-        else:
-            socketio.emit('js_fail_init_cpu_test')
-            return Response(status=500)
-
-    hw = hardware_test.HardwareTest(module.lower())
-    test_bool = True
-    
-    for result in hw.run_test():
-        if not result['success']:
-            test_bool = False
-
-        if result['message'].lower() == 'gpio':
-
-            test_pass = 'PASSED <i class="fas fa-check-circle"></i>'
-            
-            for test_result in result['results']['results']:
-                pin = 'Pin {: <2} -'.format(test_result["pin"])
-
-                if test_result["high"]:
-                    high_icon = '<i class="fas fa-check-circle"></i>'
-                else:
-                    high_icon = '<i class="fas fa-times-circle"></i>'
-
-                if test_result["low"]:
-                    low_icon = '<i class="fas fa-check-circle"></i>'
-                else:
-                    low_icon = '<i class="fas fa-times-circle"></i>'
-
-                high = f'Assert: {high_icon}'
-                low = f'Deassert: {low_icon}'
-
-                row = [ pin, high, low ]
-
-                if test_result["high"] == False or test_result["low"] == False:
-                    test_pass = 'FAILED <i class="fas fa-times-circle"></i>'
-
-                socketio.emit('js_programming_progress', '        {: <8} {: <14} {: <20}\n'.format(*row))
-
-            socketio.emit('js_programming_progress', f'    HW Test (GPIO) - {test_pass}. Took: {result["results"]["time_taken"]}ms\n')
-        else:
-            socketio.emit('js_programming_progress', result['message'])
-            socketio.sleep(0.1)
-        
-    socketio.emit('js_test_complete', test_bool)
-    """
 
 
 def exit_handler():

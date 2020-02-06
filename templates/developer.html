@@ -118,6 +118,10 @@
 </div>
 
 <script>
+    String.prototype.capitalize = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+    }
+
     var socket = io();
 
     var device_namespace = io('/DeviceNamespace')
@@ -131,23 +135,61 @@
     var uniqueID = null;
     var connected = false;
 
+
     function handleProgram() {
         device_namespace.emit('program_bin', $('#firmwareUploadLabel').text())
+
+        $('#programButton').prop('disabled', true);
+
+        $('#modulePicture').addClass("rotate")
+        $('#terminal').html("*** Programming " + fw_filename + " started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+
+        pgm_start_time = new Date().getTime()
     }
     
     webapp_namespace.on('program_bin_progress', (data) => {
-        console.log(data)
+        var msg = null
 
-        if(data.message.toLowerCase().includes("failed")) {
-            $('#testButton').removeClass("btn btn-primary")
-            $('#testButton').removeClass("btn btn-success").addClass("btn btn-danger")
+        if(data.error != '')
+        {
+            msg = data.error + ': ' + data.message 
         }
-        else if(data.message.toLowerCase().includes("passed")) {
-            $('#testButton').removeClass("btn btn-primary")
-            $('#testButton').removeClass("btn btn-danger").addClass("btn btn-success")
+        else 
+        {
+            msg = data.message
         }
 
-        $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+        if(msg != '')
+        {
+            msg = '    ' + msg.capitalize()
+        }
+
+        $('#terminal').html(msg + "\r\n" + $('#terminal').html())
+
+        if(msg.includes('Target CPU running'))
+        {
+            var pgm_end_time = new Date().getTime();
+
+            $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
+            $('#modulePicture').removeClass("rotate")
+
+            $('#programButton').prop('disabled', false)
+
+            if(testAfterProgram) {
+                handleTest()
+            }
+        }   
+        
+        if(!data.success && !data.error.includes("MutexLockedError"))
+        {
+            var pgm_end_time = new Date().getTime();
+
+            $('#terminal').html("*** Programming failed <i class='fas fa-times-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
+            
+            $('#modulePicture').removeClass("rotate")
+
+            $('#programButton').prop('disabled', false)
+        }
     })
 
 
@@ -177,6 +219,74 @@
             $('#terminal').html("*** Get UID failed  <i class='fas fa-times-circle'></i> " + data.error + ": " + data.message + " ***\n" + $('#terminal').html())
         }
     })
+
+
+    function handleTest() {
+        $('#terminal').html("*** " + module.capitalize() + " hardware test started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+
+        device_namespace.emit('run_test', module)
+    }
+
+    webapp_namespace.on('run_test_progress', (data) => {
+        console.log(data)
+        
+        if(data.message == '')
+        {
+            return
+        }
+
+        if(data.message.toLowerCase() == 'gpio') 
+        {
+            parseGPIOResults(data.results.results)
+        }
+        else
+        {
+            if(data.message.includes('***'))
+            {
+                $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+            }
+            else 
+            {
+                $('#terminal').html('    ' + data.message + "\r\n" + $('#terminal').html())
+            }      
+        }      
+    })
+
+    function parseGPIOResults(results) {
+        results.forEach(result => {
+            var assert_icon   = null
+            var deassert_icon = null
+
+            if(result.high)
+            {
+                assert_icon = '<i class="fas fa-check-circle"></i>'
+            }
+            else 
+            {
+                assert_icon = '<i class="fas fa-times-circle"></i>'
+            }
+
+            if(result.low)
+            {
+                deassert_icon = '<i class="fas fa-check-circle"></i>'
+            }
+            else 
+            {
+                deassert_icon = '<i class="fas fa-times-circle"></i>'
+            }
+
+            result_str = '        ' + result.pin.toString().padEnd(2) + ' - Assert: ' + assert_icon + ' Deassert: ' + deassert_icon
+
+            $('#terminal').html(result_str + "\r\n" + $('#terminal').html())
+        })
+    }
+
+
+
+
+
+
+
 
 
     socket.on('js_module_present', function() {
@@ -213,68 +323,9 @@
         $('#modulePicture').addClass("grayed");
     });
 
-    function programProgressIndicator() {
-        $('#terminal').html("." + $('#terminal').html())
-    }
 
-    var programProgressIndicatorIntervalId;
 
-    function programProgressIndicatorInterval() {
-        programProgressIndicator();
-        programProgressIndicatorIntervalId = setInterval(programProgressIndicator, 500);
-    }
 
-    socket.on('js_programming_started', function() {
-        bootstrap_alert.primary("Programming started...")
-        $('#programButton').removeClass("btn btn-danger")
-        $('#programButton').removeClass("btn btn-success").addClass("btn btn-primary")
-        $('#testButton').removeClass("btn btn-danger")
-        $('#testButton').removeClass("btn btn-success").addClass("btn btn-primary")
-        $('#modulePicture').addClass("rotate")
-        $('#terminal').html("*** Programming " + fw_filename + " started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
-        $('#terminal').html("\n" + $('#terminal').html())
-        programProgressIndicatorInterval()
-        pgm_start_time = new Date().getTime();
-    })
-
-    socket.on('js_programming_progress', function(data) {
-        
-    })
-
-    socket.on('js_programming_success', function() {
-        var pgm_end_time = new Date().getTime();
-        bootstrap_alert.success("Programming successful. Took: " + (pgm_end_time - pgm_start_time) + "ms")
-        clearInterval(programProgressIndicatorIntervalId)
-        $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
-        $('#programButton').removeClass("btn btn-danger")
-        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-success")
-        $('#modulePicture').removeClass("rotate")
-
-        if(testAfterProgram) {
-            handleTest()
-        }
-    })
-
-    socket.on('js_programming_error', function(data) {
-        var pgm_end_time = new Date().getTime();
-        bootstrap_alert.warning("Programming failed. Took: " + (pgm_end_time - pgm_start_time) + "ms. " + data)
-        clearInterval(programProgressIndicatorIntervalId)
-        $('#terminal').html("*** Programming failed <i class='fas fa-times-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
-        $('#programButton').removeClass("btn btn-success")
-        $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
-        $('#modulePicture').removeClass("rotate")
-    })
-
-    socket.on('js_get_unique_id_success', function(data) {
-        
-    })
-
-    socket.on('js_get_unique_id_fail', function(data) {
-        $('#uniqueIDButton').removeClass("btn btn-success")
-        $('#uniqueIDButton').removeClass("btn btn-secondary").addClass("btn btn-danger")
-
-        $('#terminal').html("*** Get UID failed <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
-    })
 
     socket.on('js_fail_init_cpu_test', (data) => {
         $('#testButton').removeClass("btn btn-primary")
@@ -285,14 +336,14 @@
 
     socket.on('js_test_complete', (data) => {
         if(data) {
-            bootstrap_alert.success("Test passed!")
+            //bootstrap_alert.success("Test passed!")
 
             if(provisionAfterTest == true) {
                 handleProvision()
             }
         }
         else {
-            bootstrap_alert.warning("Test failed.")
+            //bootstrap_alert.warning("Test failed.")
         }
     })
 
@@ -300,7 +351,6 @@
         $('#provisionButton').removeClass("btn btn-secondary")
         $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger")
 
-        bootstrap_alert.warning("Provisioning failed. Failed to initialise CPU")
     })
 
     $(document).ready( () => {
@@ -343,8 +393,6 @@
         $temp.val($(element).val()).select();
         document.execCommand("copy");
         $temp.remove();
-
-        bootstrap_alert.success("Copied: " + $(element).val())
     }
 
     $('.dropdown-item').click((event) => {
@@ -400,8 +448,6 @@
                 $('#programButton').removeClass("btn btn-secondary").addClass("btn btn-primary");
 
                 var upload_date = new Date().toLocaleString();
-
-                bootstrap_alert.success("Successfully uploaded " + filename + " at " + upload_date);
             },
             error: function(data) {
                 $('#firmwareUploadLabel').removeClass("btn btn-secondary").addClass("btn btn-danger");
@@ -415,13 +461,13 @@
                 var upload_date = new Date().toLocaleString();
 
                 if(data.status == 400) {
-                    bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date);
+                    //bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date);
                 }
                 else if(data.status == 415) {
-                    bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date);
+                    //bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date);
                 }
                 else {
-                    bootstrap_alert.warning("Unknown error at " + upload_date);
+                    //bootstrap_alert.warning("Unknown error at " + upload_date);
                 }
             }
         });
@@ -429,17 +475,8 @@
         $('#firmwareUploadButton').val("");
     }
 
-    function handleTest() {
-        $('#testButton').removeClass("btn btn-danger")
-        $('#testButton').removeClass("btn btn-success").addClass("btn btn-primary")
-        bootstrap_alert.primary("Test started...")
-        socket.emit('begin_test', module)
-    }
 
-    function isValidURL(string) {
-        var res = string.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
-        return (res !== null)
-    };
+
 
     function handleProvision() {
         var candidate_url = $('#provisionURL')[0].value
@@ -448,29 +485,14 @@
         $('#provisionButton').removeClass("btn btn-secondary").addClass("btn btn-success");
 
         if(uniqueID != null) {
-            bootstrap_alert.primary("Provision started...")
             socket.emit('start_provision', module, candidate_url, uniqueID)
         }
         else {
             $('#provisionButton').removeClass("btn btn-secondary")
             $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger");
-            bootstrap_alert.warning("Unique ID required to provision")
         }
     };
 
-    bootstrap_alert = function() {}
-
-    bootstrap_alert.success = function(message) {
-        $('#alert_placeholder').html('<div class="alert alert-success"><span>'+message+'</span></div>')
-    }
-
-    bootstrap_alert.warning = function(message) {
-        $('#alert_placeholder').html('<div class="alert alert-danger"><span>'+message+'</span></div>')
-    }
-
-    bootstrap_alert.primary = function(message) {
-        $('#alert_placeholder').html('<div class="alert alert-primary"><span>'+message+'</span></div>')
-    }
 
     var serverTime = new Date();
 
