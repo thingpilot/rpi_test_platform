@@ -128,10 +128,6 @@
 </div>
 
 <script>
-    String.prototype.capitalize = function() {
-        return this.charAt(0).toUpperCase() + this.slice(1);
-    }
-
     var socket = io();
 
     var device_namespace = io('/DeviceNamespace')
@@ -144,6 +140,32 @@
     var provisionAfterTest = false;
     var uniqueID = null;
     var connected = false;
+
+    var serverTime = new Date();
+
+    $(document).ready( () => {
+        socket.emit('is_module_present');
+    })
+
+    /* CLOCK ************************************/
+
+    function updateTime() {
+        serverTime = new Date(serverTime.getTime() + 1000);
+        $('#time').html(serverTime.toGMTString());
+    }
+
+    $(function() {
+        updateTime();
+        setInterval(updateTime, 1000);
+    })
+
+    /* CLOCK END ********************************/
+
+    /* UTILITY **********************************/
+
+    String.prototype.capitalize = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+    }
 
     function enableButton(button) {
         if(module != null && module != 'None' && connected)
@@ -165,6 +187,16 @@
     function disableButton(button) {
         $('#' + button).prop('disabled', true)
     }
+
+    function copyToClipboard(element) {
+        var $temp = $("<input>");
+        $("body").append($temp);
+        $temp.val($(element).val()).select();
+        document.execCommand("copy");
+        $temp.remove();
+    }
+
+    /* UTILITY END ******************************/
 
     /* PROGRAM **********************************/
 
@@ -455,10 +487,6 @@
 
         $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
 
-        if(fw_filename != null) {
-            enableButton('programButton')
-        }
-
         enableButton('programButton')
         enableButton('uniqueIDButton')
         enableButton('testButton')
@@ -488,21 +516,12 @@
 
 
 
-    $(document).ready( () => {
-        socket.emit('is_module_present');
-    })
 
     
 
     
 
-    function copyToClipboard(element) {
-        var $temp = $("<input>");
-        $("body").append($temp);
-        $temp.val($(element).val()).select();
-        document.execCommand("copy");
-        $temp.remove();
-    }
+    
 
     $('.dropdown-item').click((event) => {
         var name = event.currentTarget;
@@ -582,24 +601,6 @@
 
         $('#firmwareUploadButton').val("");
     }
-
-
-
-
-
-
-
-    var serverTime = new Date();
-
-    function updateTime() {
-        serverTime = new Date(serverTime.getTime() + 1000);
-        $('#time').html(serverTime.toGMTString());
-    }
-
-    $(function() {
-        updateTime();
-        setInterval(updateTime, 1000);
-    })
 </script>
 {% endblock %}
 
