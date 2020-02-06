@@ -36,6 +36,7 @@ class DeviceNamespace(Namespace):
         super().__init__(*args, **kwargs)
 
         self._can_test = False
+        self._can_provision = False
 
     def on_connect(self):
         print('Device Namespace connected')
@@ -86,6 +87,30 @@ class DeviceNamespace(Namespace):
             self._can_test = True 
 
         socketio.emit('run_test_progress', data, namespace='/WebAppNamespace')  
+
+    def on_run_provision(self, module, url, uid):
+        self._can_provision = False
+
+        socketio.emit('run_provision', namespace='/STM32L0Namespace')
+
+        start_time = time.time()
+
+        while not self._can_provision:
+            socketio.sleep(0.1)
+
+            if time.time() > (start_time + 1000):
+                socketio.emit('run_provision_progress', { 'success': False, 'message': 'Failed to place target CPU into control mode', 'error': 'Timeout'}, namespace='/WebAppNamespace')
+        
+        if self._can_provision:
+            print('self can provision')
+            socketio.emit('run_provision', (module, url, uid), namespace='/ProvisionerNamespace')
+
+    def on_run_provision_progress(self, data):
+        print(f'data here {data}')
+        if 'Target CPU running' in data['message']:
+            self._can_provision = True 
+
+        socketio.emit('run_provision_progress', data, namespace='/WebAppNamespace')  
         
 
 @app.route('/')

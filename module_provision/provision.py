@@ -6,12 +6,14 @@
 """
 
 # Standard library imports
-import functools
-import time
-from datetime import datetime
+import datetime, functools, time
+from subprocess import check_output
 
 # 3rd-party library imports
-import serial
+import serial, socketio
+
+
+sio = socketio.Client()
 
 
 class ThingpilotProvisioner():
@@ -23,10 +25,10 @@ class ThingpilotProvisioner():
     PROV_INIT = 'PROV'
     PROV_END = 'AT+END'
 
-    def __init__(self, module, url, uid):
-        self.module = module
-        self.url = url
-        self.uid = uid
+    def __init__(self):
+        self.module = None
+        self.url = None
+        self.uid = None
 
         self.uart = None
         self.timeout_flag = False
@@ -56,7 +58,7 @@ class ThingpilotProvisioner():
         return int(round(time.time() * 1000))
 
     def start_provision(self):
-        date_time = datetime.now().strftime("%a, %d %b %Y %H:%M:%S")
+        date_time = datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S")
         return { 'success': True, 'message': f'*** Beginning {self.module.title()} provisioning at: {date_time} ***\n' }
 
     @_reset_timeout_flag
@@ -76,13 +78,13 @@ class ThingpilotProvisioner():
 
         while True:
             s = str(self.uart.readline())
-            print(f"{datetime.now()} provision.py: ({self.module.title()}) received: {s}")
+            print(f"{datetime.datetime.now()} provision.py: ({self.module.title()}) received: {s}")
 
             if ThingpilotProvisioner.CTRL in s:
                 self.uart.write(bytes(ThingpilotProvisioner.PROV_INIT, 'utf-8'))
                 self.uart.write(bytes(ThingpilotProvisioner.ACK, 'utf-8'))
-                print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.PROV_INIT}")
-                print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.ACK}")
+                print(f"{datetime.datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.PROV_INIT}")
+                print(f"{datetime.datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.ACK}")
                 break
 
             if self._get_millis() > (start_time + 1000):
@@ -128,10 +130,10 @@ class ThingpilotProvisioner():
 
         while True:
             self.uart.write(bytes(ThingpilotProvisioner.PROV_END, 'utf-8'))
-            print(f"{datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.PROV_END}")
+            print(f"{datetime.datetime.now()} provision.py: ({self.module.title()}) sent: {ThingpilotProvisioner.PROV_END}")
 
             s = str(self.uart.readline())
-            print(f"{datetime.now()} provision.py: ({self.module.title()}) received: {s}")
+            print(f"{datetime.datetime.now()} provision.py: ({self.module.title()}) received: {s}")
 
             if ThingpilotProvisioner.ACK in s:
                 break
@@ -160,7 +162,7 @@ class ThingpilotProvisioner():
         }
 
         for step, func in steps.items():
-            print(f"{datetime.now()} provision.py: ({self.module.title()}) {step}")
+            print(f"{datetime.datetime.now()} provision.py: ({self.module.title()}) {step}")
 
             result = eval(func)
             yield result
@@ -169,3 +171,67 @@ class ThingpilotProvisioner():
                 self.test_passed = False
                 yield self.end_provision()
                 break
+
+
+class ProvisionerNamespace(socketio.ClientNamespace):
+    def __init__(self, provisioner, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.sio_connected = False
+
+        self._provisioner = provisioner
+
+    def on_connect(self):
+        self.sio_connected = True
+
+    def on_disconnect(self):
+        self.sio_connected = False
+
+    def on_run_provision(self, module, url, uid):
+        self._provisioner.module = module
+        self._provisioner.url = url
+        self._provisioner.uid = uid
+
+        for result in self._provisioner.provision():
+            sio.emit('run_provision_progress', result, namespace='/DeviceNamespace')
+            sio.sleep(0.2)
+
+        
+def get_ip_address():
+    ip = check_output(['hostname', '-I'])
+    ip = ip.split()[0]
+    ip = ip.decode('utf-8')
+
+    return ip
+
+
+def connect(n_attempts=100):
+    ns = ProvisionerNamespace(ThingpilotProvisioner(), '/ProvisionerNamespace')
+    sio.register_namespace(ns)
+
+    for i in range(n_attempts):
+        print(f"{datetime.datetime.now()} provision.py: Attempt {i + 1} connecting to {get_ip_address()}:80")
+
+        try:
+            sio.connect(f'http://{get_ip_address()}:80')       
+
+            print(f"{datetime.datetime.now()} provision.py: Connected to {get_ip_address()}:80")
+
+            break
+        except socketio.exceptions.ConnectionError:
+            sio.sleep(0.5)
+
+    if ns.sio_connected:
+        sio.sleep(10)
+
+    sio.sleep(1)
+
+    return ns.sio_connected
+
+
+if __name__ == '__main__':
+    if connect():
+        while True:
+            sio.sleep(1)
+    else:
+        print(f"{datetime.datetime.now()} provision.py: Failed to connect to {get_ip_address()}:80")

@@ -145,6 +145,7 @@
     var uniqueID = null;
     var connected = false;
 
+    /* PROGRAM **********************************/
 
     function handleProgram() {
         device_namespace.emit('program_bin', $('#firmwareUploadLabel').text())
@@ -206,6 +207,9 @@
         }
     })
 
+    /* PROGRAM END ******************************/
+
+    /* UNIQUE ID ********************************/
 
     function handleUniqueID(){
         device_namespace.emit('get_unique_id')
@@ -236,11 +240,29 @@
         $('#uniqueIDButton').prop('disabled', false)
     })
 
+    /* UNIQUE ID END ****************************/
+
+    /* MODULE TESTS *****************************/
 
     function handleTest() {
         $('#terminal').html("*** " + module.capitalize() + " hardware test started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
 
         device_namespace.emit('run_test', module)
+    }
+
+    function toggleTestAfterProgram() {
+        current_value = $('#testAfterProgram').val()
+
+        if(current_value == 'true') {
+            testAfterProgram = false;
+            $('#testAfterProgram').val('false')
+            $('#testAfterProgram').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else {
+            testAfterProgram = true;
+            $('#testAfterProgram').val('true')
+            $('#testAfterProgram').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
     }
 
     webapp_namespace.on('run_test_progress', (data) => {
@@ -297,6 +319,43 @@
         })
     }
 
+    /* MODULE TESTS END *************************/
+
+    /* PROVISION ********************************/
+
+    function handleProvision() {
+        var candidate_url = $('#provisionURL')[0].value
+
+        if(uniqueID != null) {
+            device_namespace.emit('run_provision', module, candidate_url, uniqueID)
+        }
+        else {
+            
+        }
+    }
+
+    function toggleProvisionAfterTest() {
+        current_value = $('#provisionAfterTest').val()
+
+        if(current_value == 'true') {
+            provisionAfterTest = false;
+            $('#provisionAfterTest').val('false')
+            $('#provisionAfterTest').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else {
+            provisionAfterTest = true;
+            $('#provisionAfterTest').val('true')
+            $('#provisionAfterTest').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+    }
+
+    webapp_namespace.on('run_provision_progress', (data) =>{
+        console.log(data)
+        $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+    })
+
+    /* PROVISION END ****************************/
+
 
 
 
@@ -347,67 +406,13 @@
 
 
 
-
-
-    socket.on('js_fail_init_cpu_test', (data) => {
-        $('#testButton').removeClass("btn btn-primary")
-        $('#testButton').removeClass("btn btn-success").addClass("btn btn-danger")
-
-        bootstrap_alert.warning("Test failed. Failed to initialise CPU")
-    })
-
-    socket.on('js_test_complete', (data) => {
-        if(data) {
-            //bootstrap_alert.success("Test passed!")
-
-            if(provisionAfterTest == true) {
-                handleProvision()
-            }
-        }
-        else {
-            //bootstrap_alert.warning("Test failed.")
-        }
-    })
-
-    socket.on('js_fail_init_cpu_provision', (data) => {
-        $('#provisionButton').removeClass("btn btn-secondary")
-        $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger")
-
-    })
-
     $(document).ready( () => {
         socket.emit('is_module_present');
     })
 
-    function toggleTestAfterProgram() {
-        current_value = $('#testAfterProgram').val()
+    
 
-        if(current_value == 'true') {
-            testAfterProgram = false;
-            $('#testAfterProgram').val('false')
-            $('#testAfterProgram').removeClass("btn btn-success").addClass("btn btn-danger")
-        }
-        else {
-            testAfterProgram = true;
-            $('#testAfterProgram').val('true')
-            $('#testAfterProgram').removeClass("btn btn-danger").addClass("btn btn-success")
-        }
-    }
-
-    function toggleProvisionAfterTest() {
-        current_value = $('#provisionAfterTest').val()
-
-        if(current_value == 'true') {
-            provisionAfterTest = false;
-            $('#provisionAfterTest').val('false')
-            $('#provisionAfterTest').removeClass("btn btn-success").addClass("btn btn-danger")
-        }
-        else {
-            provisionAfterTest = true;
-            $('#provisionAfterTest').val('true')
-            $('#provisionAfterTest').removeClass("btn btn-danger").addClass("btn btn-success")
-        }
-    }
+    
 
     function copyToClipboard(element) {
         var $temp = $("<input>");
@@ -500,20 +505,7 @@
 
 
 
-    function handleProvision() {
-        var candidate_url = $('#provisionURL')[0].value
-        
-        $('#provisionButton').removeClass("btn btn-danger")
-        $('#provisionButton').removeClass("btn btn-secondary").addClass("btn btn-success");
 
-        if(uniqueID != null) {
-            socket.emit('start_provision', module, candidate_url, uniqueID)
-        }
-        else {
-            $('#provisionButton').removeClass("btn btn-secondary")
-            $('#provisionButton').removeClass("btn btn-success").addClass("btn btn-danger");
-        }
-    };
 
 
     var serverTime = new Date();

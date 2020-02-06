@@ -142,6 +142,11 @@ class STM32L0Namespace(socketio.ClientNamespace):
         sio.emit('run_test_progress', self._cpu.init(), namespace='/DeviceNamespace')
         sio.emit('run_test_progress', self._cpu.reset_run(), namespace='/DeviceNamespace')
 
+    @_mutex_use_cpu
+    def on_run_provision(self, data):
+        sio.emit('run_provision_progress', self._cpu.init(), namespace='/DeviceNamespace')
+        sio.emit('run_provision_progress', self._cpu.reset_run(), namespace='/DeviceNamespace')
+
 
 def get_ip_address():
     ip = check_output(['hostname', '-I'])
@@ -165,7 +170,7 @@ def connect(n_attempts=100):
 
             break
         except socketio.exceptions.ConnectionError:
-            sio.sleep(0.1)
+            sio.sleep(0.5)
 
     if ns.sio_connected:
         sio.sleep(10)

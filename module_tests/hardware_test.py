@@ -289,7 +289,7 @@ def connect(n_attempts=100):
 
             break
         except socketio.exceptions.ConnectionError:
-            sio.sleep(0.1)
+            sio.sleep(0.5)
 
     if ns.sio_connected:
         sio.sleep(10)
