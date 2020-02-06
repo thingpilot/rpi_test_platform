@@ -128,35 +128,35 @@
 </div>
 
 <script>
-    var socket = io();
+    var socket = io()
 
     var device_namespace = io('/DeviceNamespace')
     var webapp_namespace = io('/WebAppNamespace')
 
-    var pgm_start_time;
-    var fw_filename = null;
-    var module = null;
-    var testAfterProgram = false;
-    var provisionAfterTest = false;
-    var uniqueID = null;
-    var connected = false;
+    var pgm_start_time
+    var fw_filename = null
+    var module = null
+    var testAfterProgram = false
+    var provisionAfterTest = false
+    var uniqueID = null
+    var connected = false
 
-    var serverTime = new Date();
+    var serverTime = new Date()
 
     $(document).ready( () => {
-        socket.emit('is_module_present');
+        socket.emit('is_module_present')
     })
 
     /* CLOCK ************************************/
 
-    function updateTime() {
-        serverTime = new Date(serverTime.getTime() + 1000);
-        $('#time').html(serverTime.toGMTString());
+    const updateTime = () => {
+        serverTime = new Date(serverTime.getTime() + 1000)
+        $('#time').html(serverTime.toGMTString())
     }
 
     $(function() {
-        updateTime();
-        setInterval(updateTime, 1000);
+        updateTime()
+        setInterval(updateTime, 1000)
     })
 
     /* CLOCK END ********************************/
@@ -164,10 +164,10 @@
     /* UTILITY **********************************/
 
     String.prototype.capitalize = function() {
-        return this.charAt(0).toUpperCase() + this.slice(1);
+        return this.charAt(0).toUpperCase() + this.slice(1)
     }
 
-    function enableButton(button) {
+    const enableButton = (button) => {
         if(module != null && module != 'None' && connected)
         {
             if(button == 'programButton')
@@ -184,23 +184,23 @@
         }
     }
 
-    function disableButton(button) {
+    const disableButton = (button) => {
         $('#' + button).prop('disabled', true)
     }
 
-    function copyToClipboard(element) {
-        var $temp = $("<input>");
-        $("body").append($temp);
-        $temp.val($(element).val()).select();
-        document.execCommand("copy");
-        $temp.remove();
+    const copyToClipboard = (element) => {
+        var $temp = $("<input>")
+        $("body").append($temp)
+        $temp.val($(element).val()).select()
+        document.execCommand("copy")
+        $temp.remove()
     }
 
     /* UTILITY END ******************************/
 
     /* PROGRAM **********************************/
 
-    function handleProgram() {
+    const handleProgram = () => {
         device_namespace.emit('program_bin', $('#firmwareUploadLabel').text())
 
         disableButton('programButton')
@@ -232,7 +232,7 @@
 
         if(msg.includes('Target CPU running'))
         {
-            var pgm_end_time = new Date().getTime();
+            var pgm_end_time = new Date().getTime()
 
             $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
             $('#modulePicture').removeClass("rotate")
@@ -264,7 +264,7 @@
 
     /* UNIQUE ID ********************************/
 
-    function handleUniqueID(){
+    const handleUniqueID = () => {
         device_namespace.emit('get_unique_id')
 
         disableButton('uniqueIDButton')
@@ -297,14 +297,14 @@
 
     /* MODULE TESTS *****************************/
 
-    function handleTest() {
+    const handleTest = () => {
         $('#terminal').html("*** " + module.capitalize() + " hardware test started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
         disableButton('testButton')
 
         device_namespace.emit('run_test', module)
     }
 
-    function toggleTestAfterProgram() {
+    const toggleTestAfterProgram = () => {
         current_value = $('#testAfterProgram').val()
 
         if(current_value == 'true') {
@@ -365,7 +365,7 @@
         }      
     })
 
-    function parseGPIOResults(results) {
+    const parseGPIOResults = (results) => {
         results.forEach(result => {
             var assert_icon   = null
             var deassert_icon = null
@@ -398,7 +398,7 @@
 
     /* PROVISION ********************************/
 
-    function handleProvision() {
+    const handleProvision = () => {
         var candidate_url = $('#provisionURL')[0].value
 
         if(uniqueID != null) {
@@ -412,16 +412,16 @@
         }
     }
 
-    function toggleProvisionAfterTest() {
+    const toggleProvisionAfterTest = () => {
         current_value = $('#provisionAfterTest').val()
 
         if(current_value == 'true') {
-            provisionAfterTest = false;
+            provisionAfterTest = false
             $('#provisionAfterTest').val('false')
             $('#provisionAfterTest').removeClass("btn btn-success").addClass("btn btn-danger")
         }
         else {
-            provisionAfterTest = true;
+            provisionAfterTest = true
             $('#provisionAfterTest').val('true')
             $('#provisionAfterTest').removeClass("btn btn-danger").addClass("btn btn-success")
         }
@@ -471,10 +471,10 @@
 
 
 
-    socket.on('js_module_present', function() {
-        connected = true;
+    socket.on('js_module_present', () => {
+        connected = true
 
-        $('#modulePicture').removeClass("grayed");
+        $('#modulePicture').removeClass("grayed")
 
         
 
@@ -483,7 +483,7 @@
         $('#testStatus').html("<i class='fas fa-times-circle'>")
         $('#provisionStatus').html("<i class='fas fa-times-circle'>")
 
-        handleUniqueID();
+        handleUniqueID()
 
         $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
 
@@ -491,10 +491,10 @@
         enableButton('uniqueIDButton')
         enableButton('testButton')
         enableButton('provisionButton')
-    });
+    })
 
-    socket.on('js_module_not_present', function() {
-        connected = false;
+    socket.on('js_module_not_present', () => {
+        connected = false
 
         disableButton('programButton')
         disableButton('uniqueIDButton')
@@ -511,8 +511,8 @@
         uniqueID = null;
         $('#uniqueID').val('')
 
-        $('#modulePicture').addClass("grayed");
-    });
+        $('#modulePicture').addClass("grayed")
+    })
 
 
 
@@ -523,14 +523,14 @@
 
     
 
-    $('.dropdown-item').click((event) => {
-        var name = event.currentTarget;
-        module = name.getAttribute("data-name");
+    $('.dropdown-item').click( (event) => {
+        var name = event.currentTarget
+        module = name.getAttribute("data-name")
 
         if(module == "None")
         {
             $('#moduleSelectButton').text("Module");
-            $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-primary dropdown-toggle");
+            $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-primary dropdown-toggle")
 
             disableButton('programButton')
             disableButton('uniqueIDButton')
@@ -544,20 +544,20 @@
             enableButton('testButton')
             enableButton('provisionButton') 
             
-            $('#moduleSelectButton').text(name.getAttribute("data-name"));
-            $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle");
+            $('#moduleSelectButton').text(name.getAttribute("data-name"))
+            $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle")
     
             $('#modulePicture').attr("src", "../static/images/" + module + ".png")
         }
     });
 
-    function handleFirmwareUpload(file) {
-        var form_data = new FormData($('#firmwareUploadForm')[0]);
+    const handleFirmwareUpload = (file) => {
+        var form_data = new FormData($('#firmwareUploadForm')[0])
 
-        var filename = file[0].name;
-        fw_filename = filename;
-        var extension = filename.split('.')[1].toLowerCase();
-        var date = file[0].lastModifiedDate.toString().slice(0, 33);
+        var filename = file[0].name
+        fw_filename = filename
+        var extension = filename.split('.')[1].toLowerCase()
+        var date = file[0].lastModifiedDate.toString().slice(0, 33)
 
         enableButton('programButton')
 
@@ -571,35 +571,33 @@
             beforeSend: function() {
                 
             },
-            success: function(data) {
-                $('#firmwareUploadLabel').text(filename);
-                $('#firmwareDateLabel').text("Modified: " + date);
+            success: (data) => {
+                $('#firmwareUploadLabel').text(filename)
+                $('#firmwareDateLabel').text("Modified: " + date)
 
                 enableButton('programButton')
-
-                var upload_date = new Date().toLocaleString();
             },
-            error: function(data) {
-                $('#firmwareUploadLabel').text("Invalid");
-                $('#firmwareDateLabel').text("Modified: ");
+            error: (data) => {
+                $('#firmwareUploadLabel').text("Invalid")
+                $('#firmwareDateLabel').text("Modified: ")
 
                 disableButton('programButton')
 
-                var upload_date = new Date().toLocaleString();
+                var upload_date = new Date().toLocaleString()
 
                 if(data.status == 400) {
-                    //bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date);
+                    //bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date)
                 }
                 else if(data.status == 415) {
-                    //bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date);
+                    //bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date)
                 }
                 else {
-                    //bootstrap_alert.warning("Unknown error at " + upload_date);
+                    //bootstrap_alert.warning("Unknown error at " + upload_date)
                 }
             }
-        });
+        })
 
-        $('#firmwareUploadButton').val("");
+        $('#firmwareUploadButton').val("")
     }
 </script>
 {% endblock %}
