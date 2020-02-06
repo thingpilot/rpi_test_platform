@@ -282,6 +282,14 @@
             if(data.message.includes('***'))
             {
                 $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+
+                if(data.message.includes('success'))
+                {
+                    if(provisionAfterTest)
+                    {
+                        handleProvision()
+                    }
+                }
             }
             else 
             {
