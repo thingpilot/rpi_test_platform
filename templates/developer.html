@@ -292,8 +292,8 @@
     const handleUniqueID = () => {
         device_namespace.emit('get_unique_id')
 
-        $('#UIDStatus').html('<i class="fas fa-spinner"></i>')
-        $('#UIDStatus').addClass("rotate")
+        $('#UIDStatus').html('<i class="fas fa-spinner" id="idSpinner"></i>')
+        $('#idSpinner').addClass("rotate")
 
         disableAllButtons()
     }
@@ -304,8 +304,8 @@
             $('#uniqueID').val(data.message)
             uniqueID = data.message
 
-            $('#UIDStatus').html("<i class='fas fa-check-circle'>")
-            $('#UIDStatus').removeClass("rotate")
+            $('#UIDStatus').html("<i class='fas fa-check-circle' id='idSpinner'>")
+            $('#idSpinner').removeClass("rotate")
 
             $('#terminal').html("*** Get UID success <i class='fas fa-check-circle'></i> UID: " + uniqueID + " ***\n" + $('#terminal').html())
         }
@@ -314,8 +314,8 @@
             $('#uniqueID').val('')
             uniqueID = null
 
-            $('#UIDStatus').html("<i class='fas fa-times-circle'>")
-            $('#UIDStatus').removeClass("rotate")
+            $('#UIDStatus').html("<i class='fas fa-times-circle' id='idSpinner'>")
+            $('#idSpinner').removeClass("rotate")
 
             $('#terminal').html("*** Get UID failed  <i class='fas fa-times-circle'></i> " + data.error + ": " + data.message + " ***\n" + $('#terminal').html())
         }
@@ -388,8 +388,8 @@
         
         disableAllButtons()
 
-        $('#programStatus').html('<i class="fas fa-spinner"></i>')
-        $('#programStatus').addClass("rotate")
+        $('#programStatus').html('<i class="fas fa-spinner" id="programSpinner"></i>')
+        $('#programSpinner').addClass("rotate")
 
         $('#terminal').html("*** Programming " + fw_filename + " started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
 
@@ -423,8 +423,8 @@
 
             enableAllButtons()
 
-            $('#programStatus').html("<i class='fas fa-check-circle'>")
-            $('#programStatus').removeClass("rotate")
+            $('#programStatus').html("<i class='fas fa-check-circle' id='programSpinner'>")
+            $('#programSpinner').removeClass("rotate")
 
             if(testAfterProgram) {
                 handleTest()
@@ -441,8 +441,8 @@
 
             enableAllButtons()
 
-            $('#programStatus').html("<i class='fas fa-times-circle'>")
-            $('#programStatus').removeClass("rotate")
+            $('#programStatus').html("<i class='fas fa-times-circle' id='programSpinner'>")
+            $('#programSpinner').removeClass("rotate")
         }
     })
 
@@ -454,8 +454,8 @@
         $('#terminal').html("*** " + module.capitalize() + " hardware test started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
         disableAllButtons()
 
-        $('#testStatus').html('<i class="fas fa-spinner"></i>')
-        $('#testStatus').addClass("rotate")
+        $('#testStatus').html('<i class="fas fa-spinner" id="testSpinner"></i>')
+        $('#testSpinner').addClass("rotate")
 
         device_namespace.emit('run_test', module)
     }
@@ -496,8 +496,8 @@
 
                 if(data.message.includes('success'))
                 {
-                    $('#testStatus').html("<i class='fas fa-check-circle'>")
-                    $('#testStatus').removeClass("rotate")
+                    $('#testStatus').html("<i class='fas fa-check-circle' id='testSpinner'>")
+                    $('#testSpinner').removeClass("rotate")
 
                     if(provisionAfterTest)
                     {
@@ -506,8 +506,8 @@
                 }
                 else if(data.message.includes('failed'))
                 {
-                    $('#testStatus').html("<i class='fas fa-times-circle'>")
-                    $('#testStatus').removeClass("rotate")
+                    $('#testStatus').html("<i class='fas fa-times-circle' id='testSpinner'>")
+                    $('#testSpinner').removeClass("rotate")
                 }
             }
             else 
@@ -518,6 +518,9 @@
                 {
                     $('#terminal').html("*** Hardware test failed <i class='fas fa-times-circle'></i> ***\r\n" + $('#terminal').html())
                     enableAllButtons()
+
+                    $('#testStatus').html("<i class='fas fa-times-circle' id='testSpinner'>")
+                    $('#testSpinner').removeClass("rotate")
                 }          
             }      
         }      
@@ -563,8 +566,8 @@
             $('#terminal').html("*** " + module.capitalize() + " provisioning started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
             disableAllButtons()
 
-            $('#provisionStatus').html('<i class="fas fa-spinner"></i>')
-            $('#provisionStatus').addClass("rotate")
+            $('#provisionStatus').html('<i class="fas fa-spinner" id="provisionSpinner"></i>')
+            $('#provisionSpinner').addClass("rotate")
 
             device_namespace.emit('run_provision', module, candidate_url, uniqueID)
         }
@@ -603,13 +606,13 @@
 
             if(data.message.includes('success'))
             {
-                $('#provisionStatus').html("<i class='fas fa-check-circle'>")
-                $('#provisionStatus').removeClass("rotate")
+                $('#provisionStatus').html("<i class='fas fa-check-circle' id='provisionSpinner'>")
+                $('#provisionSpinner').removeClass("rotate")
             }
             else if(data.message.includes('failed'))
             {
-                $('#provisionStatus').html("<i class='fas fa-times-circle'>")
-                $('#provisionStatus').removeClass("rotate")
+                $('#provisionStatus').html("<i class='fas fa-times-circle' id='provisionSpinner'>")
+                $('#provisionSpinner').removeClass("rotate")
             }
         }
         else 
@@ -620,6 +623,9 @@
             {
                 $('#terminal').html("*** Provisioning failed <i class='fas fa-times-circle'></i> ***\r\n" + $('#terminal').html())
                 enableAllButtons()
+
+                $('#provisionStatus').html("<i class='fas fa-times-circle' id='provisionSpinner'>")
+                $('#provisionSpinner').removeClass("rotate")
             }
         }       
     })

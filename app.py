@@ -42,7 +42,6 @@ class GPIONamespace(Namespace):
         socketio.emit('is_connected', namespace='/GPIOManagerNamespace')
 
     def on_is_connected_progress(self, data):
-        print(f'emitting to WEBAPP NAMESPACE {data}')
         socketio.emit('is_connected_progress', data, namespace='/WebAppNamespace')
 
 
