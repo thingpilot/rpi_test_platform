@@ -7,7 +7,7 @@
 """
 
 # Standard library imports
-import atexit, datetime, time
+import atexit, datetime, sys, time
 from subprocess import check_output
 
 # 3rd-party library imports
@@ -15,37 +15,75 @@ import RPi.GPIO as gpio
 import socketio
 
 
-# GPIO definitions
-DETECT_PIN = 1
-
-BOOT0_PIN        = 0
-U2_OUTPUT_ENABLE = 16
-U3_OUTPUT_ENABLE = 12
-
-# Global SocketIO object
 sio = socketio.Client()
 
 
-def exit_handler():
-    gpio.cleanup()
-    print(f"{datetime.datetime.now()} gpio_manager.py: Terminating GPIO pin management interface")
+class GPIOManager(object):
+    DETECT_PIN       = 1
+    BOOT0_PIN        = 0
+    U2_OUTPUT_ENABLE = 16
+    U3_OUTPUT_ENABLE = 12
+    
+    def __init__(self):
+        self.current_state = 0
+        self.previous_state = 0
+
+        gpio.setmode(gpio.BCM)
+
+        gpio.setup(GPIOManager.DETECT_PIN,       gpio.IN)
+        gpio.setup(GPIOManager.BOOT0_PIN,        gpio.OUT, initial=0)
+        gpio.setup(GPIOManager.U2_OUTPUT_ENABLE, gpio.OUT, initial=1)
+        gpio.setup(GPIOManager.U3_OUTPUT_ENABLE, gpio.OUT, initial=1)
+
+    def __delattr__(self):
+        self._cleanup_gpio()
+
+    def _cleanup_gpio(self):
+        gpio.cleanup()
+
+    def is_connected(self):
+        return self.current_state
+
+    def poll(self):
+        while True:
+            self.previous_state = self.current_state
+            self.current_state = gpio.input(GPIOManager.DETECT_PIN)
+
+            if(self.current_state == 1 and self.previous_state == 0):
+                print(f"{datetime.datetime.now()} gpio_manager.py: Module connected")
+                sio.emit('is_connected_progress', True, namespace='/GPIONamespace')         
+            elif(self.current_state == 0 and self.previous_state == 1):
+                print(f"{datetime.datetime.now()} gpio_manager.py: Module disconnected")
+                sio.emit('is_connected_progress', False, namespace='/GPIONamespace') 
+
+            sio.sleep(0.15)   
 
 
-@sio.on('IS_MODULE_PRESENT')
-def is_module_present(data):
-    state = gpio.input(DETECT_PIN)
+class GPIOManagerNamespace(socketio.ClientNamespace):
+    def __init__(self, gpio_man, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    if(state == 1):
-        print(f"{datetime.datetime.now()} gpio_manager.py: Module connected, triggered by JS")
-        sio.emit('MODULE_PRESENT')
-    else:
-        print(f"{datetime.datetime.now()} gpio_manager.py: Module disconnected, triggered by JS")
-        sio.emit('MODULE_NOT_PRESENT')
+        self.sio_connected = False
 
+        self._gpio_manager = gpio_man
 
-@sio.on('SHUTDOWN')
-def handle_shutdown():
-    exit_handler()
+    def on_connect(self):
+        self.sio_connected = True
+        
+        sio.start_background_task(self._gpio_manager.poll)
+
+    def on_disconnect(self):
+        self.sio_connected = False
+
+    def on_is_connected(self, data):
+        is_connected = self._gpio_manager.is_connected()
+
+        if is_connected:
+            print(f"{datetime.datetime.now()} gpio_manager.py: Module connected, triggered by JS")
+        else:
+            print(f"{datetime.datetime.now()} gpio_manager.py: Module disconnected, triggered by JS")
+
+        sio.emit('is_connected_progress', is_connected, namespace='/GPIONamespace')
 
 
 def get_ip_address():
@@ -56,51 +94,33 @@ def get_ip_address():
     return ip
 
 
-if __name__ == "__main__":
-    atexit.register(exit_handler)
-    connected = False
+def connect(n_attempts=100):
+    ns = GPIOManagerNamespace(GPIOManager(), '/GPIOManagerNamespace')
+    sio.register_namespace(ns)
 
-    print(f"{datetime.datetime.now()} gpio_manager.py: Intialising GPIO pin management interface")
-
-    for i in range(1, 10):
-        print(f"{datetime.datetime.now()} gpio_manager.py: Attempt {i} connecting to {get_ip_address()}:80")
-        
-        try:    
-            sio.connect(f"http://{get_ip_address()}:80")
-            connected = True
-            break
-        except socketio.exceptions.ConnectionError:
-            sio.sleep(1)
-
-    if connected:
-
-        gpio.setmode(gpio.BCM)
-
-        gpio.setup(DETECT_PIN, gpio.IN)
-        gpio.setup(BOOT0_PIN, gpio.OUT, initial=0)
-        gpio.setup(U2_OUTPUT_ENABLE, gpio.OUT, initial=1)
-        gpio.setup(U3_OUTPUT_ENABLE, gpio.OUT, initial=1)
-
-        current_state = 0
-        previous_state = 0
-
-        print(f"{datetime.datetime.now()} gpio_manager.py: GPIO pin management interface ready")
+    for i in range(n_attempts):
+        print(f"{datetime.datetime.now()} gpio_manager.py: Attempt {i + 1} connecting to {get_ip_address()}:80")
 
         try:
-            while True:
-                previous_state = current_state
-                current_state = gpio.input(DETECT_PIN)
+            sio.connect(f'http://{get_ip_address()}:80')       
 
-                if(current_state == 1 and previous_state == 0):
-                        print(f"{datetime.datetime.now()} gpio_manager.py: Module connected")
-                        sio.emit('MODULE_PRESENT')         
-                elif(current_state == 0 and previous_state == 1):
-                        print(f"{datetime.datetime.now()} gpio_manager.py: Module disconnected")
-                        sio.emit('MODULE_NOT_PRESENT')
+            print(f"{datetime.datetime.now()} gpio_manager.py: Connected to {get_ip_address()}:80")
 
-                sio.sleep(0.15)       
-        except KeyboardInterrupt:
-            pass
-    
+            break
+        except socketio.exceptions.ConnectionError:
+            sio.sleep(0.5)
+
+    if ns.sio_connected:
+        sio.sleep(10)
+
+    sio.sleep(1)
+
+    return ns.sio_connected
+
+
+if __name__ == "__main__":
+    if connect():
+        while True:
+            sio.sleep(1)
     else:
-        print(f"{datetime.datetime.now()} gpio_manager.py: Failed to connect to {get_ip_address()}:80. Server is down?")
+        print(f"{datetime.datetime.now()} gpio_manager.py: Failed to connect to {get_ip_address()}:80")

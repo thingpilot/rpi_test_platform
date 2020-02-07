@@ -28,6 +28,24 @@ app.config['FIRMWARE_FOLDER'] = FIRMWARE_FOLDER
 socketio = SocketIO(app, async_mode='eventlet', logger=True)
 
 
+class GPIONamespace(Namespace):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def on_connect(self):
+        pass
+
+    def on_disconnect(self):
+        pass
+
+    def on_is_connected(self):
+        socketio.emit('is_connected', namespace='/GPIOManagerNamespace')
+
+    def on_is_connected_progress(self, data):
+        print(f'emitting to WEBAPP NAMESPACE {data}')
+        socketio.emit('is_connected_progress', data, namespace='/WebAppNamespace')
+
+
 class DeviceNamespace(Namespace):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -143,21 +161,6 @@ def developer():
     return render_template("developer.html")
 
 
-@socketio.on('MODULE_PRESENT')
-def module_present():
-    socketio.emit('js_module_present')
-
-
-@socketio.on('MODULE_NOT_PRESENT')
-def module_not_present():
-    socketio.emit('js_module_not_present')
-
-
-@socketio.on('is_module_present')
-def is_module_present():
-    socketio.emit('IS_MODULE_PRESENT')
-
-
 def exit_handler():
     socketio.emit('SHUTDOWN')
     print(f"{datetime.datetime.now()} app.py: *** TERMINATING APPLICATION ***")
@@ -176,6 +179,7 @@ if __name__ == '__main__':
     atexit.register(exit_handler)
 
     socketio.on_namespace(DeviceNamespace('/DeviceNamespace'))
+    socketio.on_namespace(GPIONamespace('/GPIONamespace'))
 
     try:      
         socketio.run(app, host=get_ip_address(), port=80, debug=True)
