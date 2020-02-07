@@ -2,6 +2,46 @@
     display: none;
 }
 
+.btn {
+  width:100%;
+}
+
+.row.testing-container {
+  margin: 0 -10px 0 0px;
+}
+
+.btn.testing {
+  width:32%;
+}
+
+#prog_test-label {
+  width:100%;
+}
+.section-label {
+  font-weight:bold;
+  width:100%;
+}
+
+label#prog_test-label, label#mod-sel-label {
+  margin-left: 14px;
+}
+
+.row.middle-row {
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #bbb;
+  padding: 20px 0;
+  margin: 20px 0;
+}
+
+.middle-row-col {
+  padding-left:0; 
+}
+
+#UIDStatus i, #programStatus i, #testStatus i, #provisionStatus i {
+  margin-top: 9px;
+}
+
+
 .rotate {
     animation: rotation 0.5s infinite linear;
   }
