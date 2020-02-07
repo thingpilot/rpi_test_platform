@@ -10,8 +10,9 @@
         </div>
         <p></p>
         <div class="row">
+            <label id="mod-sel-label" class="section-label">Select module:</label>
             <div class="col-sm-4">
-                <b>Select module:</b>
+                
                 <button class="btn btn-primary dropdown-toggle" type="button" id="moduleSelectButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Module
                 </button>
@@ -50,10 +51,11 @@
             </div>
         </div>
         <p></p>
-        <div class="row">
-            <div class="col-sm-4">
+        <div class="row middle-row">
+            <label id="firm-sel-label" class="section-label">Select firmware:</label>
+            <div class="col-sm-4 middle-row-col">
                 <form method=post enctype=multipart/form-data id="firmwareUploadForm">
-                    <b>Select firmware:</b>
+                    
                     <input type="file" id="firmwareUploadButton" accept=".bin" name=file onchange=handleFirmwareUpload(this.files)>
                     <label class="btn btn-primary dropdown-toggle" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
                 </form>
@@ -72,17 +74,19 @@
         </div>
         <p></p>
         <div class="row">
+            <label id="prog_test-label" class="section-label">Program &amp; test: </label>
             <div class="col-sm-6">
-                <div class="row">
-                    <button class="btn btn-primary" type="button" id="testButton" disabled onclick=handleTest()>
+                <div class="row testing-container">
+                    
+                    <button class="btn btn-primary testing" type="button" id="testButton" disabled onclick=handleTest()>
                         Run Test
                     </button>
                     &nbsp;
-                    <button class="btn btn-danger" id="testAfterProgram" onclick=toggleTestAfterProgram() value=false>
+                    <button class="btn btn-danger testing" id="testAfterProgram" onclick=toggleTestAfterProgram() value=false>
                         Test after Program
                     </button>
                     &nbsp;
-                    <button class="btn btn-danger" id="provisionAfterTest" onclick=toggleProvisionAfterTest() value=false>
+                    <button class="btn btn-danger testing" id="provisionAfterTest" onclick=toggleProvisionAfterTest() value=false>
                         Provision after Test
                     </button>
                 </div>      
