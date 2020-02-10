@@ -1,0 +1,637 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div class="jumbotron">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <h1 class="text-center">Developer Mode</h1>
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
+            <label id="mod-sel-label" class="section-label">Select module:</label>
+            <div class="col-sm-4">
+                
+                <button class="btn btn-primary dropdown-toggle" type="button" id="moduleSelectButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Module
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <a class="dropdown-item" data-name="Wright" href="#">Wright</a>
+                    <a class="dropdown-item" data-name="Earhart" href="#">Earhart</a>
+                    <a class="dropdown-item" data-name="None" href="#">None</a>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <img src="../static/images/Wright.png" alt="cool module" class="grayable" id="modulePicture">
+            </div>  
+            <div class="col-sm-6">
+                
+            </div>     
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="uniqueID" rows="1" placeholder="STM32 Unique ID"></input>
+                    <div class="input-group-append">
+                        <button class="btn btn-secondary", type="button" onclick="copyToClipboard('#uniqueID')"><i class="far fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-primary" type="button" id="uniqueIDButton" onclick="handleUniqueID()">
+                    Get UID
+                </button>
+            </div>  
+            <div class="col-sm-1">
+                <label id="UIDStatus"><i class='fas fa-times-circle'></i></label>
+            </div>
+            <div class="col-sm-5">
+            </div>
+        </div>
+        <p></p>
+        <div class="row middle-row">
+            <label id="firm-sel-label" class="section-label">Select firmware:</label>
+            <div class="col-sm-4 middle-row-col">
+                <form method=post enctype=multipart/form-data id="firmwareUploadForm">
+                    
+                    <input type="file" id="firmwareUploadButton" accept=".bin" name=file onchange=handleFirmwareUpload(this.files)>
+                    <label class="btn btn-primary dropdown-toggle" for="firmwareUploadButton" id="firmwareUploadLabel">Firmware</label>
+                </form>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-primary" type="button" id="programButton" disabled onclick=handleProgram()>
+                    Program
+                </button>
+            </div> 
+            <div class="col-sm-1">
+                <label id="programStatus"><i class='fas fa-times-circle'></i></label>
+            </div> 
+            <div class="col-sm-5">
+                <label id="firmwareDateLabel">Modified: </label>
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
+            <label id="prog_test-label" class="section-label">Program &amp; test: </label>
+            <div class="col-sm-6">
+                <div class="row testing-container">
+                    
+                    <button class="btn btn-primary testing" type="button" id="testButton" disabled onclick=handleTest()>
+                        Run Test
+                    </button>
+                    &nbsp;
+                    <button class="btn btn-danger testing" id="testAfterProgram" onclick=toggleTestAfterProgram() value=false>
+                        Test after Program
+                    </button>
+                    &nbsp;
+                    <button class="btn btn-danger testing" id="provisionAfterTest" onclick=toggleProvisionAfterTest() value=false>
+                        Provision after Test
+                    </button>
+                </div>      
+            </div>  
+            <div class="col-sm-1">
+                <label id="testStatus"><i class='fas fa-times-circle'></i></label>
+            </div> 
+            <div class="col-sm-5">           
+            </div>
+        </div>
+        <p></p>
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="provisionURL" rows="1" placeholder="Provisioning Key"></input>
+                    <div class="input-group-append">
+                        <button id="provisionCopyButton" class="btn btn-secondary", type="button" onclick="copyToClipboard('#provisionURL')"><i class="far fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>  
+            <div class="col-sm-2">
+                <button class="btn btn-primary" type="button" id="provisionButton" disabled onclick="handleProvision()">
+                    Provision
+                </button>
+            </div>  
+            <div class="col-sm-1">
+                <label id="provisionStatus"><i class='fas fa-times-circle'></i></label>
+            </div>
+            <div class="col-sm-5">
+            </div>
+        </div>
+        <p></p>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-body">
+            <pre class="pre-scrollable"> 
+<div id="terminal"> 
+</div>
+            </pre> 
+        </div>
+    </div>
+</div>
+
+<script>
+    var socket = io()
+
+    var device_namespace = io('/DeviceNamespace')
+    var webapp_namespace = io('/WebAppNamespace')
+    var gpio_namespace = io('/GPIONamespace')
+
+    var pgm_start_time
+    var fw_filename = null
+    var module = null
+    var testAfterProgram = false
+    var provisionAfterTest = false
+    var uniqueID = null
+    var connected = false
+
+    var serverTime = new Date()
+
+    $(document).ready( () => {
+        gpio_namespace.emit('is_connected')
+    })
+
+    /* CLOCK ************************************/
+
+    const updateTime = () => {
+        serverTime = new Date(serverTime.getTime() + 1000)
+        $('#time').html(serverTime.toGMTString())
+    }
+
+    $(function() {
+        updateTime()
+        setInterval(updateTime, 1000)
+    })
+
+    /* CLOCK END ********************************/
+
+    /* UTILITY **********************************/
+
+    String.prototype.capitalize = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1)
+    }
+
+    const enableButton = (button) => {
+        if(module != null && module != 'None' && connected)
+        {
+            if(button == 'programButton')
+            {
+                if(fw_filename != null) 
+                {
+                    $('#' + button).prop('disabled', false)
+                }
+            }
+            else
+            {
+                $('#' + button).prop('disabled', false)
+            }       
+        }
+    }
+
+    const enableAllButtons = () => {
+        enableButton('programButton')
+        enableButton('uniqueIDButton')
+        enableButton('testButton')
+        enableButton('provisionButton')
+    }
+
+    const disableButton = (button) => {
+        $('#' + button).prop('disabled', true)
+    }
+
+    const disableAllButtons = () => {
+        disableButton('programButton')
+        disableButton('uniqueIDButton')
+        disableButton('testButton')
+        disableButton('provisionButton')
+    }
+
+    const copyToClipboard = (element) => {
+        var $temp = $("<input>")
+        $("body").append($temp)
+        $temp.val($(element).val()).select()
+        document.execCommand("copy")
+        $temp.remove()
+    }
+
+    /* UTILITY END ******************************/
+
+    /* MODULE SELECT ****************************/
+
+    $('.dropdown-item').click( (event) => {
+        var name = event.currentTarget
+        module = name.getAttribute("data-name")
+
+        if(module == "None")
+        {
+            $('#moduleSelectButton').text("Module");
+            $('#moduleSelectButton').removeClass("btn btn-success dropdown-toggle").addClass("btn btn-primary dropdown-toggle")
+
+            disableAllButtons()
+        }
+        else 
+        {
+            enableAllButtons()
+            
+            $('#moduleSelectButton').text(name.getAttribute("data-name"))
+            $('#moduleSelectButton').removeClass("btn btn-primary dropdown-toggle").addClass("btn btn-success dropdown-toggle")
+    
+            $('#modulePicture').attr("src", "../static/images/" + module + ".png")
+        }
+    })
+
+    /* MODULE SELECT END ************************/
+
+    /* MODULE DETECT ****************************/
+
+    webapp_namespace.on('is_connected_progress', (data) => {
+        if(data)
+        {
+            connected = true
+
+            $('#modulePicture').removeClass("grayed")
+
+            
+
+            $('#UIDStatus').html("<i class='fas fa-times-circle'>")
+            $('#programStatus').html("<i class='fas fa-times-circle'>")
+            $('#testStatus').html("<i class='fas fa-times-circle'>")
+            $('#provisionStatus').html("<i class='fas fa-times-circle'>")
+
+            handleUniqueID()
+
+            $('#terminal').html("*** Module connected at: " + $('#time').html() + " <i class='fas fa-check-circle'></i> ***\n" + $('#terminal').html())
+
+            enableAllButtons()
+        }
+        else
+        {
+            connected = false
+
+            disableAllButtons()
+
+            $('#terminal').html("*** Module disconnected at: " + $('#time').html() + " <i class='fas fa-times-circle'></i> ***\n" + $('#terminal').html())
+
+            $('#UIDStatus').html("<i class='fas fa-times-circle'>")
+            $('#programStatus').html("<i class='fas fa-times-circle'>")
+            $('#testStatus').html("<i class='fas fa-times-circle'>")
+            $('#provisionStatus').html("<i class='fas fa-times-circle'>")
+
+            uniqueID = null;
+            $('#uniqueID').val('')
+
+            $('#modulePicture').addClass("grayed")
+        }
+    })
+
+    /* MODULE DETECT END ************************/
+
+    /* UNIQUE ID ********************************/
+
+    const handleUniqueID = () => {
+        device_namespace.emit('get_unique_id')
+
+        $('#UIDStatus').html('<i class="fas fa-spinner" id="idSpinner"></i>')
+        $('#idSpinner').addClass("rotate")
+
+        disableAllButtons()
+    }
+
+    webapp_namespace.on('get_unique_id_progress', (data) => {
+        if(data.success) 
+        {
+            $('#uniqueID').val(data.message)
+            uniqueID = data.message
+
+            $('#UIDStatus').html("<i class='fas fa-check-circle' id='idSpinner'>")
+            $('#idSpinner').removeClass("rotate")
+
+            $('#terminal').html("*** Get UID success <i class='fas fa-check-circle'></i> UID: " + uniqueID + " ***\n" + $('#terminal').html())
+        }
+        else 
+        {
+            $('#uniqueID').val('')
+            uniqueID = null
+
+            $('#UIDStatus').html("<i class='fas fa-times-circle' id='idSpinner'>")
+            $('#idSpinner').removeClass("rotate")
+
+            $('#terminal').html("*** Get UID failed  <i class='fas fa-times-circle'></i> " + data.error + ": " + data.message + " ***\n" + $('#terminal').html())
+        }
+
+        enableAllButtons()
+    })
+
+    /* UNIQUE ID END ****************************/
+
+    /* FIRMWARE UPLOAD **************************/
+
+    const handleFirmwareUpload = (file) => {
+        var form_data = new FormData($('#firmwareUploadForm')[0])
+
+        var filename = file[0].name
+        fw_filename = filename
+        var extension = filename.split('.')[1].toLowerCase()
+        var date = file[0].lastModifiedDate.toString().slice(0, 33)
+
+        enableButton('programButton')
+
+        $.ajax({
+            data: form_data,
+            type: "POST",
+            url: "/firmware",
+            contentType: false, 
+            cache: false,
+            processData: false,
+            beforeSend: () => {
+                
+            },
+            success: (data) => {
+                $('#firmwareUploadLabel').text(filename)
+                $('#firmwareDateLabel').text("Modified: " + date)
+
+                enableButton('programButton')
+            },
+            error: (data) => {
+                $('#firmwareUploadLabel').text("Invalid")
+                $('#firmwareDateLabel').text("Modified: ")
+
+                disableButton('programButton')
+
+                var upload_date = new Date().toLocaleString()
+
+                if(data.status == 400) 
+                {
+                    //bootstrap_alert.warning("Bad filetype or filename: " + filename + " at " + upload_date)
+                }
+                else if(data.status == 415) 
+                {
+                    //bootstrap_alert.warning("Error uploading file: " + filename + " at " + upload_date)
+                }
+                else 
+                {
+                    //bootstrap_alert.warning("Unknown error at " + upload_date)
+                }
+            }
+        })
+
+        $('#firmwareUploadButton').val("")
+    }
+
+    /* FIRMWARE UPLOAD END **********************/
+
+    /* PROGRAM **********************************/
+
+    const handleProgram = () => {
+        device_namespace.emit('program_bin', $('#firmwareUploadLabel').text())
+        
+        disableAllButtons()
+
+        $('#programStatus').html('<i class="fas fa-spinner" id="programSpinner"></i>')
+        $('#programSpinner').addClass("rotate")
+
+        $('#terminal').html("*** Programming " + fw_filename + " started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+
+        pgm_start_time = new Date().getTime()
+    }
+    
+    webapp_namespace.on('program_bin_progress', (data) => {
+        var msg = null
+
+        if(data.error != '')
+        {
+            msg = data.error + ': ' + data.message 
+        }
+        else 
+        {
+            msg = data.message
+        }
+
+        if(msg != '')
+        {
+            msg = '    ' + msg.capitalize()
+        }
+
+        $('#terminal').html(msg + "\r\n" + $('#terminal').html())
+
+        if(msg.includes('Target CPU running'))
+        {
+            var pgm_end_time = new Date().getTime()
+
+            $('#terminal').html("*** Programming success <i class='fas fa-check-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
+
+            enableAllButtons()
+
+            $('#programStatus').html("<i class='fas fa-check-circle' id='programSpinner'>")
+            $('#programSpinner').removeClass("rotate")
+
+            if(testAfterProgram) {
+                handleTest()
+            }
+        }   
+        
+        if(!data.success && !data.error.includes("MutexLockedError"))
+        {
+            var pgm_end_time = new Date().getTime();
+
+            $('#terminal').html("*** Programming failed <i class='fas fa-times-circle'></i> Took: " + (pgm_end_time - pgm_start_time) + "ms ***\n" + $('#terminal').html())
+            
+            $('#modulePicture').removeClass("rotate")
+
+            enableAllButtons()
+
+            $('#programStatus').html("<i class='fas fa-times-circle' id='programSpinner'>")
+            $('#programSpinner').removeClass("rotate")
+        }
+    })
+
+    /* PROGRAM END ******************************/
+
+    /* MODULE TESTS *****************************/
+
+    const handleTest = () => {
+        $('#terminal').html("*** " + module.capitalize() + " hardware test started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+        disableAllButtons()
+
+        $('#testStatus').html('<i class="fas fa-spinner" id="testSpinner"></i>')
+        $('#testSpinner').addClass("rotate")
+
+        device_namespace.emit('run_test', module)
+    }
+
+    const toggleTestAfterProgram = () => {
+        current_value = $('#testAfterProgram').val()
+
+        if(current_value == 'true') {
+            testAfterProgram = false;
+            $('#testAfterProgram').val('false')
+            $('#testAfterProgram').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else {
+            testAfterProgram = true;
+            $('#testAfterProgram').val('true')
+            $('#testAfterProgram').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+    }
+
+    webapp_namespace.on('run_test_progress', (data) => {
+        console.log(data)
+
+        if(data.message == '')
+        {
+            return
+        }
+
+        if(data.message.toLowerCase() == 'gpio') 
+        {
+            parseGPIOResults(data.results.results)
+        }
+        else
+        {
+            if(data.message.includes('***'))
+            {
+                $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+                enableAllButtons()
+
+                if(data.message.includes('success'))
+                {
+                    $('#testStatus').html("<i class='fas fa-check-circle' id='testSpinner'>")
+                    $('#testSpinner').removeClass("rotate")
+
+                    if(provisionAfterTest)
+                    {
+                        handleProvision()
+                    }
+                }
+                else if(data.message.includes('failed'))
+                {
+                    $('#testStatus').html("<i class='fas fa-times-circle' id='testSpinner'>")
+                    $('#testSpinner').removeClass("rotate")
+                }
+            }
+            else 
+            {
+                $('#terminal').html('    ' + data.message + "\r\n" + $('#terminal').html())
+
+                if(data.message.includes('Failed to make target CPU run'))
+                {
+                    $('#terminal').html("*** Hardware test failed <i class='fas fa-times-circle'></i> ***\r\n" + $('#terminal').html())
+                    enableAllButtons()
+
+                    $('#testStatus').html("<i class='fas fa-times-circle' id='testSpinner'>")
+                    $('#testSpinner').removeClass("rotate")
+                }          
+            }      
+        }      
+    })
+
+    const parseGPIOResults = (results) => {
+        results.forEach(result => {
+            var assert_icon   = null
+            var deassert_icon = null
+
+            if(result.high)
+            {
+                assert_icon = '<i class="fas fa-check-circle"></i>'
+            }
+            else 
+            {
+                assert_icon = '<i class="fas fa-times-circle"></i>'
+            }
+
+            if(result.low)
+            {
+                deassert_icon = '<i class="fas fa-check-circle"></i>'
+            }
+            else 
+            {
+                deassert_icon = '<i class="fas fa-times-circle"></i>'
+            }
+
+            result_str = '        ' + result.pin.toString().padEnd(2) + ' - Assert: ' + assert_icon + ' Deassert: ' + deassert_icon
+
+            $('#terminal').html(result_str + "\r\n" + $('#terminal').html())
+        })
+    }
+
+    /* MODULE TESTS END *************************/
+
+    /* PROVISION ********************************/
+
+    const handleProvision = () => {
+        var candidate_url = $('#provisionURL')[0].value
+
+        if(uniqueID != null) {
+            $('#terminal').html("*** " + module.capitalize() + " provisioning started at: " + $('#time').html() + " ***\n" + $('#terminal').html())
+            disableAllButtons()
+
+            $('#provisionStatus').html('<i class="fas fa-spinner" id="provisionSpinner"></i>')
+            $('#provisionSpinner').addClass("rotate")
+
+            device_namespace.emit('run_provision', module, candidate_url, uniqueID)
+        }
+        else {
+            
+        }
+    }
+
+    const toggleProvisionAfterTest = () => {
+        current_value = $('#provisionAfterTest').val()
+
+        if(current_value == 'true') {
+            provisionAfterTest = false
+            $('#provisionAfterTest').val('false')
+            $('#provisionAfterTest').removeClass("btn btn-success").addClass("btn btn-danger")
+        }
+        else {
+            provisionAfterTest = true
+            $('#provisionAfterTest').val('true')
+            $('#provisionAfterTest').removeClass("btn btn-danger").addClass("btn btn-success")
+        }
+    }
+
+    webapp_namespace.on('run_provision_progress', (data) =>{
+        console.log(data)
+
+        if(data.message == '')
+        {
+            return
+        }
+
+        if(data.message.includes('***'))
+        {
+            $('#terminal').html(data.message + "\r\n" + $('#terminal').html())
+            enableAllButtons()
+
+            if(data.message.includes('success'))
+            {
+                $('#provisionStatus').html("<i class='fas fa-check-circle' id='provisionSpinner'>")
+                $('#provisionSpinner').removeClass("rotate")
+            }
+            else if(data.message.includes('failed'))
+            {
+                $('#provisionStatus').html("<i class='fas fa-times-circle' id='provisionSpinner'>")
+                $('#provisionSpinner').removeClass("rotate")
+            }
+        }
+        else 
+        {
+            $('#terminal').html('    ' + data.message + "\r\n" + $('#terminal').html())
+
+            if(data.message.includes('Failed to make target CPU run'))
+            {
+                $('#terminal').html("*** Provisioning failed <i class='fas fa-times-circle'></i> ***\r\n" + $('#terminal').html())
+                enableAllButtons()
+
+                $('#provisionStatus').html("<i class='fas fa-times-circle' id='provisionSpinner'>")
+                $('#provisionSpinner').removeClass("rotate")
+            }
+        }       
+    })
+
+    /* PROVISION END ****************************/
+</script>
+{% endblock %}
+
+
