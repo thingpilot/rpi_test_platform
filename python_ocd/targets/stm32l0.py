@@ -182,14 +182,9 @@ def connect(n_attempts=100):
 
 if __name__ == '__main__':
     if connect():
-        for i in range(10):
-            print('STM OH YES OH YES')
-
         while True:
             sio.sleep(1)
     else:
         print(f"{datetime.datetime.now()} stm32l0.py: Failed to connect to {get_ip_address()}:80")
-        for i in range(10):
-            print('STM OH NO OH NO')
 
 
