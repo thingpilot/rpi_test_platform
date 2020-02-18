@@ -1,14 +1,15 @@
-<nav class="navbar navbar-expand-md navbar-dark bg-dark">
+<nav class="navbar navbar-expand-md navbar-dark">
     <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+        <div id="logo"><img src="../static/images/logo-w.png" alt="ThingPilotLogo"/></div>
         <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
+            <!-- <li class="nav-item active">
                 <a class="nav-link" href="/">Thingpilot</a>
+            </li> -->
+            <li class="nav-item">
+                <a class="nav-link" href="/developer" id="developerMenuItem">Developer</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/developer">Developer</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/production">Production</a>
+                <a class="nav-link" href="/production" id="productionMenuItem">Production</a>
             </li>
         </ul>
     </div>
@@ -16,7 +17,7 @@
     <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
         <ul class="navbar-nav ml-auto">
             <li class="nav-item active">
-                <p class="nav-link">Current Time: <span id="time"></span></p>             
+                <p class="nav-link timedate">Current Time: <span id="time"></span></p>             
             </li>
         </ul>
     </div>
