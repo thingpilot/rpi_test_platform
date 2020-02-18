@@ -1,6 +1,6 @@
 """
     file:    target.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Parent class from which all targets should be derived. A target is a Python class
              that contains device specific (i.e. STM32L0) functionality, whereas the OCDTarget

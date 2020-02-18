@@ -1,6 +1,6 @@
 """
     file:    stm32l0.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Target class for STM32L0 processors. Implements target-specific methods, such as 
              extraction of the STM32 unique ID.

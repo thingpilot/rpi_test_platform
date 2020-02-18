@@ -1,6 +1,6 @@
 """
     file:    pinmap.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Python dictionaries listing pin mappings for each Thingpilot module 
 """

@@ -1,6 +1,6 @@
 """
     file:    hardware_test.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Python script to verify Wright/Earhart module hardware functionality. This will test
              that all available GPIO pins function correctly as well as all available comms busses,
