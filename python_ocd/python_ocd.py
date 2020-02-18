@@ -1,6 +1,6 @@
 """
     file:    python_ocd.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Python Tcl client for OpenOCD. Allows the sending of commands to a 
              microprocessor via OpenOCD and monitors the return status. 

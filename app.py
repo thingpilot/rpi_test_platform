@@ -1,18 +1,18 @@
 """
     file:    app.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Flask webserver with real-time functionality provided by SocketIO and eventlet
 """
 
 # Standard library imports
-import atexit, datetime, requests, subprocess, time
+import atexit, datetime, requests, subprocess, time, os
 from os import urandom, path, getcwd
 from subprocess import check_output
 
 # 3rd-party library imports
 import eventlet
-from flask import Flask, render_template, request, Response
+from flask import Flask, render_template, request, Response, send_from_directory
 from flask_socketio import Namespace, SocketIO
 from werkzeug.utils import secure_filename
 
@@ -129,6 +129,10 @@ class DeviceNamespace(Namespace):
 def home():
     return render_template("home.html")
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static/images'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 def allowed_file(filename, type):
     if type == 'FW':
