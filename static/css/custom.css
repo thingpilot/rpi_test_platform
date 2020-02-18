@@ -38,7 +38,7 @@ label#prog_test-label, label#mod-sel-label {
 }
 
 #UIDStatus i, #programStatus i, #testStatus i, #provisionStatus i {
-  margin-top: 9px;
+  margin-top: 10px;
 }
 
 
@@ -79,3 +79,28 @@ img.grayed {
 .fa-times-circle {
   color: #FF0000;
 }
+.navbar {
+  height: 82PX;
+  background: #007FD6 !important;
+  margin-bottom:50px;
+}
+#logo img {
+  width:150px;
+  margin: 0 20px 11px 20px;
+}
+p.nav-link.timedate {
+  margin-top: 18px;
+}
+label#firmwareDateLabel {
+  margin-top: 6px;
+}
+#moduleSelectButton {
+  margin-top:10px;
+}
+.navbar-dark .navbar-nav .nav-link {
+  color: #fff;
+}
+.navbar-dark .navbar-nav .nav-link:hover {
+  text-decoration: underline;
+}
+
