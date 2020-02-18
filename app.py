@@ -1,6 +1,6 @@
 """
     file:    app.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Flask webserver with real-time functionality provided by SocketIO and eventlet
 """

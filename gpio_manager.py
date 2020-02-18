@@ -1,6 +1,6 @@
 """
     file:    gpio_manager.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Detect the presence of a Thingpilot module and alert webserver using SocketIO and 
              manage GPIOs that control hardware necessary for communications with module

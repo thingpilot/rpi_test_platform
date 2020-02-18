@@ -1,6 +1,6 @@
 """
     file:    provision.py
-    version: 0.1.0
+    version: 0.2.0
     author:  Adam Mitchell
     brief:   Handles device provisioning and setup with the ThingPilot backend
 """
